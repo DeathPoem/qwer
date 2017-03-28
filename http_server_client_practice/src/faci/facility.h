@@ -3,8 +3,12 @@
 
 #include "config.h"
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdarg.h>
+#include <netdb.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <error.h>
@@ -23,6 +27,8 @@
 
 using std::string;
 using std::vector;
+using std::cout;
+using std::endl;
 using std::pair;
 using std::tuple;
 
@@ -32,31 +38,35 @@ using std::tuple;
         printf("%s : %d, error no : %d %s\n", __FILE__, __LINE__, errno, strerror(errno));\
         exit(1);\
     }
+
 namespace my_http {
 
     int MyFacilityTest(); 
 
-    /*
-     * return log file fd
-     */
+    // return log file fd
     int DeployLogFile();
 
-    /*
-     * write to a df log file
-     */
-    void WriteToLog(int fd, const char* format, ...); 
+    void WriteToFile(int fd, const char* format, ...); 
 
-    // wrapper
-    
-    /*
-     * a wrapper for create + bind + listen socket
-     */
+    class noncopyable {
+        public :
+        noncopyable() {}
+        noncopyable(const noncopyable& c) = delete;
+        noncopyable& operator==(const noncopyable& c) = delete;
+    };
 
-    /*
-     * create + connect socket
-     */
+    class Logger : private noncopyable {
+        public :
+            Logger();
+            ~Logger();
+            static Logger& get_logger();
+            Logger& repare();
+            int log(const char* format, ...);
+        private :
+            string filename_;
+            int fd_;
+    };
 
 } /* my_http */ 
-
 
 #endif /* ifndef FACILITY_H */
