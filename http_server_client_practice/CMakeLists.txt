@@ -4,7 +4,8 @@ set(MY_ROOT_PATH http_practice_SOURCE_DIR)
 
 ###########
 # config
-set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall --std=c++11 -Wextra")
+set(ENV{CTEST_OUTPUT_ON_FAILURE} TRUE)
+set(CMAKE_CXX_FLAGS_DEBUG "-g -fpermissive -Wall --std=c++11 -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-g -Wall --std=c++11 -Wextra")
 set(CMAKE_BUILD_TYPE DEBUG)
 
@@ -33,4 +34,3 @@ include_directories(
     ${gtest_SOURCE_DIR}/include
     )
 add_subdirectory(test)
-

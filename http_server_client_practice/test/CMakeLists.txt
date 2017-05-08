@@ -14,17 +14,11 @@ project(unittest)
 ##################
 # auto scan
 # include_directories() call would only add include_dir to current CMakeLists.txt file
-include_directories(
-    ${http_practice_SOURCE_DIR}/src
-    )
-include_directories(
-    ${gtest_SOURCE_DIR}/include 
-    )
-message("==== ENTRY ==== ${gtest_SOURCE_DIR}")
+message("==== ENTRY ==== ${unittest_SOURCE_DIR}")
 file(GLOB TESTFILES ./ *.cpp)
 foreach(singletestfilename ${TESTFILES})
     get_filename_component(tn ${singletestfilename} NAME_WE)
-    message("==== going do with file target : ${tn}")
+    message("==== do with file target : ${tn}")
     add_executable(${tn} ${singletestfilename})
     target_link_libraries(${tn} gtest gtest_main)
     target_link_libraries(${tn} ${MY_EXTRA_LIBS})
