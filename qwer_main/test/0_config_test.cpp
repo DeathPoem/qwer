@@ -5,9 +5,9 @@ static int static_func() {
     return 1;
 }
 
-TEST(fundamental_test, gtest_config_test) { EXPECT_EQ(1, static_func()); }
+TEST(test_case_0, gtest_config_test) { EXPECT_EQ(1, static_func()); }
 
-TEST(third_party_test, json_config_test) {
+TEST(test_case_0, json_config_test) {
     using json = nlohmann::json;
     json j2 = {
         {"pi", 3.141},
@@ -29,8 +29,7 @@ TEST(third_party_test, json_config_test) {
     ASSERT_NE(j2, nullptr);
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

@@ -1,2 +1,0 @@
-======== new log =======
-repare.log : for log testing thing 1

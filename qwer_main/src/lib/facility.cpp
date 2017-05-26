@@ -4,7 +4,7 @@
 
 namespace my_http {
     int MyFacilityTest() {
-        int fd = my_http::DeployLogFile();
+        int fd = my_http::DeployLogFile("");
         my_http::WriteToFile(fd, "Open log file");
         close(fd);
         return 0;
@@ -28,15 +28,19 @@ namespace my_http {
         return cur_level_;
     }
 
-    int DeployLogFile() {
+    int DeployLogFile(const char* file) {
         char filename[100];
         int fd;
-        sprintf(filename, "%s/stuff/log.txt", GET_MY_ROOT_PATH);
+        if (file != "") {
+            sprintf(filename, "%s", file);
+        } else {
+            sprintf(filename, "%s/stuff/log.txt", GET_MY_ROOT_PATH);
+        }
         fd = open(filename, O_WRONLY | O_TRUNC | O_APPEND);
         if (fd == -1) {
             fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, S_IRUSR | S_IWUSR | S_IROTH);
         } else {
-            cout << "log exist!!!" << endl;
+
         }
         exit_if(fd<0, "error in open log file");
         char buff[100];
@@ -71,8 +75,8 @@ namespace my_http {
         return lg;
     }
 
-    Logger& Logger::repare() {
-        int fd = DeployLogFile();
+    Logger& Logger::repare(const char* file) {
+        int fd = DeployLogFile(file);
         if (fd == -1) {
             perror("deploy log fail");
         } else {
@@ -94,6 +98,9 @@ namespace my_http {
         sprintf(buff, "filename:%s, line:%s, time:%s, level:%s", filename, line, time, levelstr.c_str());
         vsprintf(buff, format, arglist);
 
+        if (fd_ < 0) {
+            throw std::runtime_error("no fd_");
+        }
         write(fd_, buff, strlen(buff));
         va_end(arglist);
         return strlen(buff);
