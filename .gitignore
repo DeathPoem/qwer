@@ -1,2 +1,5 @@
-**/bin
-**/third_party
+**/bin/*
+**/cmake-build-debug/*
+**/third_party/*
+**/.idea
+!*.gitkeep

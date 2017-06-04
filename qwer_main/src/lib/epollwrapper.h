@@ -10,29 +10,6 @@ namespace my_http {
 
     class EventManager;
 
-    // name it as 'channel', which wraps the operation of fd that can be epoll or poll
-    class Channel : private noncopyable {
-        public:
-            Channel (int fd);
-            virtual ~Channel ();
-            int get_fd();
-            void close();
-            bool is_closed();
-            //struct epoll_event* get_epoll_event_p(); this is not good, because if you return a heap pointer, the caller would be responsible to delete it.
-            // following would be more good
-            uint32_t get_events();
-            static uint32_t get_readonly_event_flag();
-            static uint32_t get_writeonly_event_flag();
-            static uint32_t get_wr_event_flag();
-            static uint32_t get_no_wr_event_flag();
-            void set_events(uint32_t para_event);
-        private:
-            int fd_;
-            uint32_t event_;
-            bool is_closed_;
-            /* data */
-    };
-
     class IODemultiplexerInterface : private noncopyable {
         public:
             IODemultiplexerInterface ();
@@ -57,7 +34,7 @@ namespace my_http {
     // TODO add error handling for this class
     class epollwrapper : public IODemultiplexerInterface {
         public:
-            epollwrapper ();
+            epollwrapper (EventManager* emp);
             virtual ~epollwrapper ();
             void loop_once(time_ms_t time) override;
             void AddChannel(Channel* p_ch) override;
@@ -70,7 +47,7 @@ namespace my_http {
             const int MaxEvents = 1000;
             vector<struct epoll_event> epoll_vec_;
             unordered_set<Channel*> active_channels_;
-            weak_ptr<EventManager> event_manager_;
+            EventManager* emp_;
     };
 
     class pollwrapper : public IODemultiplexerInterface {

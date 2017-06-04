@@ -1,8 +1,18 @@
 #include "facility.h"
+#include <thread>
+#include <sstream>
 #include "gtest/gtest.h"
 
 TEST(test_case_1, test_0_noname) {
     EXPECT_EQ(0, my_http::MyFacilityTest());
+}
+
+TEST(test_case_1, test_0_stream) {
+    using my_http::Logger;
+    LOG_SET_FILE("");
+    LOG_SET_LEVEL("DEBUG");
+    int i = 0;
+    SLOG_ERROR("fuck" << i);
 }
 
 TEST(test_case_1, test_1_log) {
@@ -20,7 +30,22 @@ TEST(test_case_1, test_1_log_v) {
 TEST(test_case_1, test_1_log_level) {
     using my_http::Logger;
     LOG_SET_FILE("");
-    LOG_ERROR("fuck!");
+    LOG_SET_LEVEL("DEBUG");
+    LOG_ERROR("\nfuck!");
+}
+
+thread_local int thrlocal_int = 0;
+
+void thread_func() {
+    thrlocal_int = 1;
+    my_http::cout << "other,int = " << thrlocal_int << my_http::endl;
+}
+
+TEST(test_case_1, test_thread_local) {
+    thrlocal_int = 2;
+    std::thread t0(thread_func);
+    my_http::cout << "main,int = " << thrlocal_int << my_http::endl;
+    t0.join();
 }
 
 int main(int argc, char **argv) {

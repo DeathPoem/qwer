@@ -9,8 +9,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdarg.h>
+#include <sstream>
 #include <netdb.h>
 #include <fcntl.h>
+#include <sys/epoll.h>
 #include <unistd.h>
 #include <error.h>
 #include <string.h>
@@ -42,7 +44,7 @@ namespace my_http {
     }
 
 #define log_if_level(level, ...) \
-    if (static_cast<uint32_t>(level) < static_cast<uint32_t>(Logger::get_logger().get_log_level())) { \
+    if (static_cast<uint32_t>(level) <= static_cast<uint32_t>(Logger::get_logger().get_log_level())) { \
         Logger::get_logger().log_v(static_cast<uint32_t>(level), __FILE__, std::to_string(__LINE__).c_str(), __TIME__, __VA_ARGS__); \
     }
 
@@ -53,17 +55,44 @@ namespace my_http {
 #define LOG_SET_FILE(file) Logger::get_logger().repare(file)
 #define LOG_SET_LEVEL(level) Logger::get_logger().set_log_level(level)
 #define ABORT(...) \
-    while (0) {\
+    do {\
         log_if_level(Logger::LogLevel::ERROR, __VA_ARGS__);\
         std::abort();\
-    }
+    } while (0)
+
 #define NOTDONE() ABORT("not implement yet!")
+#define SLOG_ERROR(msg) \
+    do {\
+        std::stringstream tmp;\
+        tmp << msg << std::endl;\
+        log_if_level(Logger::LogLevel::ERROR, tmp.str().c_str());\
+    } while (0)
+#define SLOG_WARN(msg) \
+    do {\
+        std::stringstream tmp;\
+        tmp << msg << std::endl;\
+        log_if_level(Logger::LogLevel::WARN, tmp.str().c_str());\
+    } while (0)
+#define SLOG_DEBUG(msg) \
+    do {\
+        std::stringstream tmp;\
+        tmp << msg << std::endl;\
+        log_if_level(Logger::LogLevel::DEBUG, tmp.str().c_str());\
+    } while (0)
+#define SLOG_INFO(msg) \
+    do {\
+        std::stringstream tmp;\
+        tmp << msg << std::endl;\
+        log_if_level(Logger::LogLevel::INFO, tmp.str().c_str());\
+    } while (0)
 
 using std::string;
 using std::vector;
 using std::cout;
 using std::endl;
 using std::map;
+using std::bind;
+using std::function;
 using std::unique_ptr;
 using std::unordered_set;
 using std::unordered_map;
@@ -77,6 +106,30 @@ using std::unordered_map;
 using std::to_string;
 using CallBack = std::function<void()>;
 using unique_id_t = uint32_t;
+using time_ms_t = int;
+
+    struct TimeStamp {
+        string tostring() const;
+        TimeStamp& init_stamp_of_now();
+        void add_stamp_by_mill(time_ms_t para_t);
+        struct timespec get_spec() const;
+        private :
+        struct timespec spec_;
+    };
+
+    bool operator==(const TimeStamp& lhs, const TimeStamp& rhs);
+    bool operator<(const TimeStamp& lhs, const TimeStamp& rhs);
+    bool operator>(const TimeStamp& lhs, const TimeStamp& rhs);
+
+    struct TimerId {
+        TimeStamp alarm_time_;
+        unique_id_t seqno_;
+    };
+
+    bool operator==(const TimerId& lhs, const TimerId& rhs);
+    bool operator<(const TimerId& lhs, const TimerId& rhs);
+    bool operator>(const TimerId& lhs, const TimerId& rhs);
+
 
     int MyFacilityTest(); 
 
@@ -118,6 +171,29 @@ using unique_id_t = uint32_t;
                 {2, "DEBUG"},
                 {3, "INFO"}
             };
+    };
+
+    // name it as 'channel', which wraps the operation of fd that can be epoll or poll
+    class Channel : private noncopyable {
+        public:
+            Channel (int fd);
+            virtual ~Channel ();
+            int get_fd();
+            void close();
+            bool is_closed();
+            //struct epoll_event* get_epoll_event_p(); this is not good, because if you return a heap pointer, the caller would be responsible to delete it.
+            // following would be more good
+            uint32_t get_events();
+            static uint32_t get_readonly_event_flag();
+            static uint32_t get_writeonly_event_flag();
+            static uint32_t get_wr_event_flag();
+            static uint32_t get_no_wr_event_flag();
+            void set_events(uint32_t para_event);
+        private:
+            int fd_;
+            uint32_t event_;
+            bool is_closed_;
+            /* data */
     };
 
 } /* my_http */ 

@@ -5,8 +5,10 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
 # Usage
 
 * do following :
-        
-        cd /bin
+
+        cd ./qwer/qwer_main
+        mkdir ./bin
+        cd ./bin
         ../runme_instead_of_cmake.sh 
         make 
         make check (or ctest -V)
@@ -40,6 +42,7 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
 - [ ] vim-instant-markdown : install nodejs-legacy fail
 - [] make logging cpp stream style
 - [] running time logging level set
+- [] git third party, gtest
 
 # Pitfall list 
 
