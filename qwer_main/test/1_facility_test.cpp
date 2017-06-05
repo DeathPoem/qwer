@@ -41,11 +41,12 @@ void thread_func() {
     my_http::cout << "other,int = " << thrlocal_int << my_http::endl;
 }
 
-TEST(test_case_1, test_thread_local) {
+TEST(test_case_1, test_raw_thread_local) {
     thrlocal_int = 2;
     std::thread t0(thread_func);
     my_http::cout << "main,int = " << thrlocal_int << my_http::endl;
     t0.join();
+    SUCCEED();
 }
 
 int main(int argc, char **argv) {

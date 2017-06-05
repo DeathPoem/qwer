@@ -1,0 +1,6 @@
+[submodule "qwer_main/third_party/googletest"]
+	path = qwer_main/third_party/googletest
+	url = https://github.com/google/googletest
+[submodule "qwer_main/third_party/json"]
+	path = qwer_main/third_party/json
+	url = https://github.com/nlohmann/json

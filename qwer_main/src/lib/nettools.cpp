@@ -34,7 +34,21 @@ namespace my_http {
         }
     }
 
+    struct sockaddr_in Ipv4Addr::get_socketaddr_in() {
+        return addr_;
+    }
+
+    int Ipv4Addr::ip_bind_socketfd(int fd) {
+        int ret = ::bind(fd, (struct sockaddr*)&addr_, sizeof(addr_));
+        if (ret < 0) {
+            SLOG_DEBUG("errorno=" << std::strerror(errno));
+            NOTDONE();
+        }
+        return ret;
+    }
+
     Ipv4Addr::Ipv4Addr(string ipdotdecimal, int port) {
+        memset(&addr_, 0, sizeof(addr_));
         addr_.sin_family = AF_INET;
         addr_.sin_port = htons(port);
         string ip_str = ipdotdecimal;
@@ -52,7 +66,7 @@ namespace my_http {
         return string(inet_ntoa(addr_.sin_addr));
     }
 
-    Buffer::Buffer() : buffer_(vector<char>(space_append_size_, 'a')), begin_(0), end_(0), capacity_(buffer_.size()) {}
+    Buffer::Buffer() : buffer_(vector<char>(initial_size_, 'a')), begin_(0), end_(0), capacity_(buffer_.size()) {}
 
     Buffer::Buffer(const Buffer& rhs) {
         buffer_ = rhs.buffer_;

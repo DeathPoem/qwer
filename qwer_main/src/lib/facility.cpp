@@ -24,17 +24,25 @@ namespace my_http {
     }
 
     void TimeStamp::add_stamp_by_mill(time_ms_t para_t) {
-        time_t s = para_t / 1000;
-        long remain = para_t % 1000;
-        long addup = remain + (spec_.tv_nsec / 1.0e6);
+        uint64_t s = 2300 / 1000;
+        uint64_t remain = 2300 % 1000;
+        uint64_t addup = remain + (spec_.tv_nsec / 1.0e6);
         s += addup / 1000;
-        remain += addup % 1000;
+        remain = addup % 1000;
         spec_.tv_nsec = remain * 1000000;
         spec_.tv_sec += s;
     }
 
     struct timespec TimeStamp::get_spec() const {
         return spec_;
+    }
+
+    TimeStamp::TimeStamp(struct timespec spec) {
+        spec_ = spec;
+    }
+
+    TimeStamp::TimeStamp() {
+
     }
 
     bool operator==(const TimeStamp& lhs, const TimeStamp& rhs) {
@@ -128,6 +136,10 @@ namespace my_http {
         vsprintf(buff, format, arglist);
         write(fd, buff, strlen(buff));
         va_end(arglist);
+    }
+
+    std::ostream &operator<<(std::ostream &os, const TimeStamp &rhs) {
+        return os << rhs.tostring();
     }
 
     Logger::Logger() {

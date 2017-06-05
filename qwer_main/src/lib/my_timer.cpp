@@ -4,6 +4,7 @@
 #include <time.h>
 #include <math.h>
 
+
 namespace my_http {
 
     Timer::Timer(TimeStamp&& when, CallBack&& cb, unique_id_t seqno) : cb_(cb) {
@@ -86,7 +87,6 @@ namespace my_http {
         for (auto id : to_erase_timerid) {
             auto found = find_if(timer_vec_.begin(), timer_vec_.end(), [&id](Timer& timer){ return timer.get_timerid() == id; });
             timer_vec_.erase(found);
-            LOG_INFO("fuck!!");
         }
         modify_timerfd_next_time();
     }
@@ -114,12 +114,20 @@ namespace my_http {
     void TimerQueue::modify_timerfd_next_time() {
         LOG_INFO("here, modify_timerfd_next_time");
         next_wake_time_ = timerid_not_active.top().alarm_time_;
-        int timerfd = up_ch_->get_fd();
+        auto timer_fd = up_ch_->get_fd();
         struct itimerspec howlong;
         memset(&howlong, 0, sizeof(howlong));
         howlong.it_value = timerid_not_active.top().alarm_time_.get_spec();
-        int check = ::timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &howlong, nullptr);
+        int check;
+        check = ::timerfd_settime(timer_fd, TFD_TIMER_ABSTIME, &howlong, nullptr);
         if (check != 0) {
+            struct itimerspec old_time;
+            int check1 = ::timerfd_gettime(timer_fd, &old_time);
+            if (check1 != 0) {
+                NOTDONE();
+            }
+            TimeStamp ts1(old_time.it_value), ts2(old_time.it_interval);
+            SLOG_DEBUG("our old time is " << ts1 << ",interval is" << ts2 << ",str errorno is" << std::strerror(errno));
             NOTDONE();
         }
     }

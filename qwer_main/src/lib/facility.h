@@ -12,6 +12,7 @@
 #include <sstream>
 #include <netdb.h>
 #include <fcntl.h>
+#include <cstring>
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <error.h>
@@ -24,6 +25,7 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include <iostream>
 #include <functional>
 #include <algorithm>
 #include <tuple>
@@ -109,6 +111,8 @@ using unique_id_t = uint32_t;
 using time_ms_t = int;
 
     struct TimeStamp {
+        TimeStamp();
+        TimeStamp(struct timespec spec);
         string tostring() const;
         TimeStamp& init_stamp_of_now();
         void add_stamp_by_mill(time_ms_t para_t);
@@ -120,6 +124,7 @@ using time_ms_t = int;
     bool operator==(const TimeStamp& lhs, const TimeStamp& rhs);
     bool operator<(const TimeStamp& lhs, const TimeStamp& rhs);
     bool operator>(const TimeStamp& lhs, const TimeStamp& rhs);
+    std::ostream& operator<<(std::ostream& os, const TimeStamp& rhs);
 
     struct TimerId {
         TimeStamp alarm_time_;
@@ -173,6 +178,7 @@ using time_ms_t = int;
             };
     };
 
+    enum class ChannelType {TCP, TIMER, UDP, FD};
     // name it as 'channel', which wraps the operation of fd that can be epoll or poll
     class Channel : private noncopyable {
         public:
@@ -191,6 +197,7 @@ using time_ms_t = int;
             void set_events(uint32_t para_event);
         private:
             int fd_;
+            enum ChannelType ct_;
             uint32_t event_;
             bool is_closed_;
             /* data */

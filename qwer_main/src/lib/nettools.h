@@ -9,8 +9,9 @@ namespace my_http {
         Ipv4Addr(string ipdotdecimal, int port);
         Ipv4Addr(const struct sockaddr_in& addr_arg);
         string get_ip_str();
-        sockaddr_in* get_socketaddr_in();
+        sockaddr_in get_socketaddr_in();
         static string host2ip_str(const string& host);
+        int ip_bind_socketfd(int fd);
         private :
         static int hostname_2_ip(char* hostname, char* ip);
         sockaddr_in addr_;
@@ -31,7 +32,8 @@ namespace my_http {
         size_t size() const;
         char* get_begin();
         char* get_end();
-        static const size_t space_append_size_ = 64;
+        const size_t initial_size_ = 1024;
+        //static const size_t space_append_size_ = 64;
         // TODO add own allocator
         vector<char> buffer_;
         bool invariant_check() throw(std::runtime_error);
@@ -39,9 +41,9 @@ namespace my_http {
         size_t begin_, end_, capacity_;
     };
 
-    struct Socketfd {
-
-    };
+    namespace detail {
+        int read_from_Channel_to_Buffer(const Channel& ch, Buffer& buf);
+    }
 
 }
 #endif /* ifndef NETTOOLS */

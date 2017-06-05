@@ -13,13 +13,13 @@ TEST(test_case_3, test_event_loop_do_nothing) {
     LOG_SET_FILE("");
     LOG_SET_LEVEL("INFO");
     EventManagerWrapper emw;
-    emw.loop_once(2 * 1000);
+    emw.loop_once(1 * 1000);
 }
 
 void threadFunc() {
     LOG_INFO("in other thread");
     EventManagerWrapper emw;
-    emw.loop_once(2 * 1000);
+    emw.loop_once(1 * 1000);
 }
 
 TEST(test_case_3, test_event_loop_thread) {
@@ -46,7 +46,7 @@ TEST(test_case_3, test_raw_timerfd) {
         struct timespec now;
         memset(&howlong, 0, sizeof(howlong));
         ::clock_gettime(CLOCK_MONOTONIC_COARSE, &now);
-        howlong.it_value.tv_sec = now.tv_sec + 3;
+        howlong.it_value.tv_sec = now.tv_sec + 1;
         // first expiration is 3 second later
         int check = timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &howlong, nullptr);
         if (check != 0) {
@@ -70,7 +70,7 @@ TEST(test_case_3, test_raw_timerfd) {
     struct timespec now;
     memset(&howlong, 0, sizeof(howlong));
     ::clock_gettime(CLOCK_MONOTONIC_COARSE, &now);
-    howlong.it_value.tv_sec = now.tv_sec + 3;
+    howlong.it_value.tv_sec = now.tv_sec + 1;
     // first expiration is 3 second later
     int check = timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &howlong, nullptr);
     if (check != 0) {
@@ -80,7 +80,7 @@ TEST(test_case_3, test_raw_timerfd) {
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, timerfd, &epoll_event_ob);
 
     for (int i : {1, 2, 3}) {
-        int ready = epoll_wait(epoll_fd, events, 5, 5 * 1000);
+        int ready = epoll_wait(epoll_fd, events, 5, 1000);
         if (i == 1 && ready == 1) {
             cb();
         } else if (i == 2 && ready == 1) {
@@ -111,11 +111,11 @@ TEST(test_case_3, test_event_loop_timerfd) {
 
     struct itimerspec howlong;
     memset(&howlong, 0, sizeof(howlong));
-    howlong.it_value.tv_sec = TimeStamp().init_stamp_of_now().get_spec().tv_sec + 3;    // first expiration is second later
-    howlong.it_interval.tv_sec = 3;     // every 3 seconds
+    howlong.it_value.tv_sec = TimeStamp().init_stamp_of_now().get_spec().tv_sec + 1;    // first expiration is second later
+    howlong.it_interval.tv_sec = 1;     // every 3 seconds
     ::timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &howlong, nullptr);
 
-    emw.loop_once(7 * 1000);
+    emw.loop_once(2000);
     ::close(timerfd);
     EXPECT_EQ(outer, "fucking awesome!");
 }
@@ -127,23 +127,20 @@ TEST(test_case_3, test_event_loop_runat) {
     string another;
     string other;
     EventManagerWrapper emw;
-    auto cb0 = [&outer, &emw](){ outer = "fucking awesome!"; };
-    auto cb1 = [&another, &emw](){ another = "fucking asshole!"; };
-    auto cb2 = [&other, &emw](){ other = "fucking!"; };
-    emw.run_at(5 * 1000, cb0);
-    LOG_INFO("here");
-    emw.run_at(1 * 1000, cb1);
-    LOG_INFO("here");
-    emw.run_at(1 * 1000, cb2);
-    LOG_INFO("here");
+    auto cb0 = [&outer](){ outer = "fucking awesome!"; };
+    auto cb1 = [&another](){ another = "fucking asshole!"; };
+    auto cb2 = [&other](){ other = "fucking!"; };
+    emw.run_at(2300, std::move(cb0));
+    emw.run_at(900, std::move(cb1));
+    emw.run_at(900, std::move(cb2));
 
     for (int i : {1, 2, 3}) {
+        SLOG_INFO("end of i =" << i);
         try {
-            emw.loop_once(2 * 1000);
+            emw.loop_once(1 * 1000);
         } catch (const std::exception& e) {
             cout << e.what() << endl;
         }
-        LOG_INFO(string("end of i =" + to_string(i)).c_str());
     }
 
     EXPECT_EQ(outer, "fucking awesome!");
