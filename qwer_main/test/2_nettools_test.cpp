@@ -1,6 +1,7 @@
-#include "nettools.h"
 #include "facility.h"
 #include "gtest/gtest.h"
+#include "nettools.h"
+#include "threadpool.h"
 
 TEST(test_case_2, test_ipv4addr_constructor) {
     using my_http::Ipv4Addr;
@@ -28,7 +29,36 @@ TEST(test_case_2, test_buffer) {
     EXPECT_STREQ(one_buffer, two_buffer);
 }
 
-int main(int argc, char **argv) {
+TEST(test_case_2, test_thread_pool) {
+    using my_http::ThreadPool;
+    using my_http::Logger;
+    using std::chrono_literals::operator""ms;
+    auto hc = std::thread::hardware_concurrency();
+    LOG_SET_FILE("");
+    LOG_SET_LEVEL("INFO");
+    LOG_INFO("hardware_concurrency() get hc = %d", hc);
+    ThreadPool threadpool_ob(hc + 1, 1000);
+    threadpool_ob.add_task([]() {
+        std::this_thread::sleep_for(2ms);
+        LOG_INFO("in thread task1");
+    });
+    threadpool_ob.add_task([]() {
+        std::this_thread::sleep_for(3ms);
+        LOG_INFO("in thread task2");
+    });
+    std::string outer = "awe?";
+    threadpool_ob.add_task([&outer]() {
+        std::this_thread::sleep_for(3ms);
+        outer = "awesome!";
+        LOG_INFO("in thread task3");
+    });
+    threadpool_ob.start();
+    LOG_INFO("before threadpool_ob stop()");
+    threadpool_ob.stop();
+    EXPECT_EQ(outer, "awesome!");
+}
+
+int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

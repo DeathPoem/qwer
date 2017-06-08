@@ -1,4 +1,7 @@
 ======== new log =======
 repare.
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/1_facility_test.cpp, line:34, time:16:18:58, level:ERROR <====> log:
-fuck!
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:39, time:15:22:59, level:INFO <====> log:hardware_concurrency() get hc = 4
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:56, time:15:22:59, level:INFO <====> log:before threadpool_ob stop()
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:43, time:15:22:59, level:INFO <====> log:in thread task1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:47, time:15:22:59, level:INFO <====> log:in thread task2
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:53, time:15:22:59, level:INFO <====> log:in thread task2

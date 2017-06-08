@@ -182,7 +182,7 @@ namespace my_http {
         vsprintf(buff + strlen(buff), format, arglist);
 
         if (fd_ < 0) {
-            throw std::runtime_error("no fd_");
+            throw std::runtime_error("no fd_, please LOG_SETFILE()");
         }
         write(fd_, buff, strlen(buff));
         va_end(arglist);
