@@ -15,6 +15,16 @@ namespace my_http {
         event_call_back_map_[make_pair(uint2enum(p_ch->get_events()), p_ch)] = std::move(cb);
         io_demultiplexer_->AddChannel(p_ch);
     }
+
+    void EventManager::register_event(uint32_t event, Channel* p_ch, CallBack&& cb) {
+        LOG_INFO("enter EventManager::register_event");
+        event_call_back_map_[make_pair(uint2enum(event), p_ch)] = std::move(cb);
+        io_demultiplexer_->AddChannel(p_ch);
+    }
+
+    void remove_registered_event(uint32_t event, Channel* p_ch) {
+
+    }
     
     void EventManager::handle_event(EventEnum para_enum, Channel* p_ch) {
         LOG_INFO("enter EventManager::handle_event");
@@ -30,6 +40,10 @@ namespace my_http {
     }
 
     TimerId EventManager::run_at(time_ms_t para_t, CallBack&& cb) {
+        return run_after(para_t, std::move(cb));
+    }
+
+    TimerId EventManager::run_after(time_ms_t para_t, CallBack&& cb) {
         LOG_INFO("here");
         TimeStamp when;
         when.init_stamp_of_now().add_stamp_by_mill(para_t);
@@ -111,12 +125,29 @@ namespace my_http {
         pimpl_->register_event(p_ch, std::move(cb));
     }
 
+    uint32_t enum2uint(EventEnum eventenum) {
+        uint32_t event;
+
+        if (eventenum == EventEnum::IORead) {
+            event = EPOLLIN;
+        } else if (eventenum == EventEnum::IOWrite) {
+            event = EPOLLOUT;
+        } else if (eventenum == EventEnum::PeerShutDown) {
+            event = EPOLLRDHUP;
+        } else {
+            NOTDONE();
+        }
+        return event;
+    }
+
     EventEnum uint2enum(uint32_t event) {
         EventEnum para_enum;
         if (event == EPOLLIN) {
             para_enum = EventEnum::IORead;
         } else if (event == EPOLLOUT) {
             para_enum = EventEnum::IOWrite;
+        } else if (event == EPOLLRDHUP) {
+            para_enum = EventEnum::PeerShutDown;
         } else {
             NOTDONE();
         }
@@ -125,6 +156,10 @@ namespace my_http {
 
     void EventManagerWrapper::loop() {
         pimpl_->loop();
+    }
+
+    EventManager* EventManagerWrapper::get_pimpl() {
+        return pimpl_.get();
     }
 
     void EventManagerWrapper::exit() {

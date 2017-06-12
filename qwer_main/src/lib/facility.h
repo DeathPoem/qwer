@@ -31,6 +31,7 @@
 #include <tuple>
 #include <memory>
 #include <utility>
+#include <cstdint>
 
 /*
  * This file is implement for some facility like logging, debugging, error
@@ -91,6 +92,7 @@ namespace my_http {
 using std::string;
 using std::vector;
 using std::cout;
+using std::get;
 using std::endl;
 using std::map;
 using std::bind;

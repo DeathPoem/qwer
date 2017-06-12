@@ -15,9 +15,10 @@ namespace my_http {
 
     // translate from Event to EventEnum in EventManagerWrapper::register_event()
     enum class EventEnum {IODemultiplexCB, IORead, IOWrite,
-                        Timeout};
+                        Timeout, PeerShutDown};
 
     EventEnum uint2enum(uint32_t event);
+    uint32_t enum2uint(EventEnum eventenum);
 
     class EventManager : private noncopyable {
         public:
@@ -25,8 +26,10 @@ namespace my_http {
             virtual ~EventManager();
             void handle_event(EventEnum para_enum, Channel* p_ch);
             void register_event(Channel* p_ch, CallBack&& cb);
+            void register_event(uint32_t event, Channel* p_ch, CallBack&& cb);
             void remove_registered_event();
-            TimerId run_at(time_ms_t para_t, CallBack&& cb);
+            TimerId run_at(time_ms_t para_t, CallBack&& cb);    // means after FIXME
+            TimerId run_after(time_ms_t para_t, CallBack&& cb);
             void check_state_of_timerid(TimerId tid);
             //TimerId run_after(time_ms_t para_t, CallBack&& cb);
             void loop();
@@ -52,8 +55,9 @@ namespace my_http {
             void loop_once(int timeout);
             void loop();
             void register_event(Channel* p_ch, CallBack&& cb);
-            TimerId run_at(time_ms_t para_t, CallBack&& cb);
+            TimerId run_at(time_ms_t para_t, CallBack&& cb);    // after
             void exit();
+            EventManager* get_pimpl();
         private:
             unique_ptr<EventManager> pimpl_;
     };

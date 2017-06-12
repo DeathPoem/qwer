@@ -22,7 +22,8 @@ TEST(test_case_2, test_buffer) {
     ASSERT_EQ(strlen(one_buffer), 26);
     buf.write_to_buffer(one_buffer, strlen(one_buffer));
     try {
-        buf.read_from_buffer(two_buffer, buf.get_readable_bytes());
+        auto check = buf.read_from_buffer(two_buffer, buf.get_readable_bytes());
+        buf.consume(check);
     } catch (std::runtime_error& e) {
         std::cerr << "Error:" << e.what();
     }
@@ -54,7 +55,7 @@ TEST(test_case_2, test_thread_pool) {
     });
     threadpool_ob.start();
     LOG_INFO("before threadpool_ob stop()");
-    threadpool_ob.stop();
+    threadpool_ob.stop_w();
     EXPECT_EQ(outer, "awesome!");
 }
 

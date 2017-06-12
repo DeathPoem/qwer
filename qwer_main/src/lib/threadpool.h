@@ -38,12 +38,13 @@ public:
     ThreadPool(int threadsize, int tasksize);
     virtual ~ThreadPool();
     void start();
-    void stop();
+    void stop_w();
     bool add_task(CallBack&& cb);
     size_t get_task_size() const;
     size_t get_thread_size() const;
 
 private:
+    void stop();
     SyncQueue<CallBack> tasks_;
     std::vector<std::thread> thread_container_;
     std::atomic_bool is_running_;

@@ -42,7 +42,9 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
 - [ ] vim-instant-markdown : install nodejs-legacy fail
 - [] make logging cpp stream style
 - [] running time logging level set
-- [] git third party, gtest
+- [x] git third party, gtest
+- [] try something about corutine, about microservices-architecture
+- [] try something about reflection
 
 # Pitfall list 
 

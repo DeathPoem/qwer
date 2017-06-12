@@ -1,7 +1,15 @@
 ======== new log =======
 repare.
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:39, time:15:22:59, level:INFO <====> log:hardware_concurrency() get hc = 4
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:56, time:15:22:59, level:INFO <====> log:before threadpool_ob stop()
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:43, time:15:22:59, level:INFO <====> log:in thread task1
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:47, time:15:22:59, level:INFO <====> log:in thread task2
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/2_nettools_test.cpp, line:53, time:15:22:59, level:INFO <====> log:in thread task2
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:94, time:15:40:29, level:DEBUG <====> log:start client thread
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:105, time:15:40:29, level:DEBUG <====> log:listen
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:110, time:15:40:29, level:DEBUG <====> log:f
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:40, time:15:40:29, level:DEBUG <====> log:block until accept!
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:51, time:15:40:29, level:DEBUG <====> log:after connect!
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:56, time:15:40:29, level:DEBUG <====> log:after client write! check =13,buflen=13
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:120, time:15:40:29, level:DEBUG <====> log:after acceptstate =2
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:80, time:15:40:29, level:INFO <====> log: by =13 n =13read is=hello? world!
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:131, time:15:40:29, level:DEBUG <====> log:after echo
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:66, time:15:40:29, level:DEBUG <====> log:receive from server

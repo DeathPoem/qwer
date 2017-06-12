@@ -75,16 +75,15 @@ namespace my_http {
                         emp_->add_active_event(EventEnum::IORead, p_ch);
                     } else if (active_event & EPOLLOUT) {
                         emp_->add_active_event(EventEnum::IOWrite, p_ch);
+                    } else if (active_event & EPOLLRDHUP) {
+                        emp_->add_active_event(EventEnum::PeerShutDown, p_ch);
                     } else {
-                        //TODO
                         NOTDONE();
                     }
                 } else {
-                    // TODO 
                     NOTDONE();
                 }
             } else {
-                // TODO 
                 NOTDONE();
             }
         }

@@ -7,10 +7,10 @@ ThreadPool::ThreadPool(int threadsize, int tasksize) : tasks_(tasksize), is_runn
         thread_container_.emplace_back(std::thread([this]() {
             CallBack movetoit;
             bool one_more_task_done = false;
-            while (is_running_ || !is_running_ && one_more_task_done) {
+            while (is_running_ || (!is_running_ && !one_more_task_done)) {
+                if (!is_running_) { one_more_task_done = true; }
                 auto check = tasks_.try_pop(std::ref(movetoit));
                 if (check) {
-                    if (!is_running_) { one_more_task_done = true; }
                     movetoit();
                 } else {
                     // and wait;
@@ -24,6 +24,10 @@ ThreadPool::ThreadPool(int threadsize, int tasksize) : tasks_(tasksize), is_runn
 }
 
 ThreadPool::~ThreadPool() {
+    std::call_once(once_, [this]() { stop(); });
+}
+
+void ThreadPool::stop_w() {
     std::call_once(once_, [this]() { stop(); });
 }
 
