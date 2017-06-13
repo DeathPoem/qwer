@@ -14,6 +14,7 @@
 #include "facility.h"
 #include "gtest/gtest.h"
 #include "nettools.h"
+#include "msg_responser.h"
 #include "tcpserver.h"
 
 using namespace my_http;
@@ -35,6 +36,8 @@ void clientfunc(int port, Ipv4Addr ipaddr) {
     int check = -1;
     char buf[99];
     char buff[99];
+    ::memset(buf, '\0', 99);
+    ::memset(buff, '\0', 99);
     {
         std::unique_lock<std::mutex> lk(m);
         LOG_DEBUG("block until accept!");
@@ -116,7 +119,7 @@ TEST(test_case_4, test_raw_tcp) {
         new_fd = ::accept(socketfd, &peer, &peerlen);
         {
             std::lock_guard<std::mutex> lk(m);
-            SLOG_DEBUG("after accept"
+            SLOG_DEBUG("after accept -" << i
                        << "state =" << state);
         }
         if (new_fd < 0) {

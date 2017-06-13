@@ -1,15 +1,21 @@
 ======== new log =======
 repare.
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:94, time:15:40:29, level:DEBUG <====> log:start client thread
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:105, time:15:40:29, level:DEBUG <====> log:listen
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:110, time:15:40:29, level:DEBUG <====> log:f
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:40, time:15:40:29, level:DEBUG <====> log:block until accept!
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:51, time:15:40:29, level:DEBUG <====> log:after connect!
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:56, time:15:40:29, level:DEBUG <====> log:after client write! check =13,buflen=13
-
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:120, time:15:40:29, level:DEBUG <====> log:after acceptstate =2
-
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:80, time:15:40:29, level:INFO <====> log: by =13 n =13read is=hello? world!
-
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:131, time:15:40:29, level:DEBUG <====> log:after echo
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:66, time:15:40:29, level:DEBUG <====> log:receive from server
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:45, time:10:26:46, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:16, time:10:25:36, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:47, time:10:25:36, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:59, time:10:26:46, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:136, time:10:26:46, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:14, time:10:25:36, level:INFO <====> log:enter EventManager::register_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:25, time:10:25:36, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:52, time:10:26:46, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:107, time:10:26:46, level:INFO <====> log:here, after_add_new_timer
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:115, time:10:26:46, level:INFO <====> log:here, modify_timerfd_next_time
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:51, time:10:25:36, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:14, time:10:25:36, level:INFO <====> log:enter EventManager::register_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:25, time:10:25:36, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:47, time:10:25:36, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:59, time:10:26:46, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:107, time:10:26:46, level:INFO <====> log:here, after_add_new_timer
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:115, time:10:26:46, level:INFO <====> log:here, modify_timerfd_next_time
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:51, time:10:25:36, level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:40, time:10:26:46, level:ERROR <====> log:timer vec is not empty! size =2

@@ -37,7 +37,7 @@ namespace my_http {
 
     TimerQueue::~TimerQueue() {
         if (!timer_vec_.empty()) {
-            throw std::runtime_error("timer vec is not empty! size =" + to_string(timer_vec_.size()));
+            SLOG_ERROR("timer vec is not empty! size =" << to_string(timer_vec_.size()));
         }
     }
 

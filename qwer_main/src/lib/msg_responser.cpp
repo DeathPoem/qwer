@@ -2,7 +2,19 @@
 
 namespace my_http {
     
-    MsgResponser::MsgResponser() {}
+    MsgResponser::MsgResponser() {
+        echo_do_it = [](Buffer& rb, Buffer wb) {
+            char readto[4000];
+            if (rb.get_readable_bytes() >= 4000) {
+                NOTDONE();
+            }
+            rb.read_from_buffer(readto, rb.get_readable_bytes());
+            auto consume_size = strlen(readto);
+            rb.consume(consume_size);
+            char result[4000];
+            wb.write_to_buffer(result, consume_size);
+        };  // this would be invoked if no cb for particular seqno
+    }
 
     MsgResponser::~MsgResponser() {}
 

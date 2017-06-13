@@ -25,20 +25,24 @@ class TCPConnection;
 
 enum class TCPSTATE {
     Invalid = 0,
-    listening = 7,
-    Afterhandshake = 1,  // handshake is happed when listen() a socket, accept()
+    Listening = 1,
+    Afterhandshake = 2,  // handshake is happed when listen() a socket, accept()
                          // just return you a new socket
-    try_connect = 6,
-    Connected = 2,
-    Peerclosed = 3,
-    Localclosed = 4,
-    Failed = 5,
+    Tryconnect = 3,
+    Gooddead = 4,
+    Peerclosed = 5,
+    Localclosed = 6,
+    Failed = 7,
     Newborn = 8
 };
 
+std::ostream& operator<<(std::ostream& os, TCPSTATE state);
+
+using MsgResponserCallBack = std::function<void(uint32_t, Buffer&, Buffer&)>;
+using SizeCallBack = std::function<size_t()>;
 using GetSeqnoCallBack = std::function<void(uint32_t)>;
 using MoveTCPConnectionCallBack =
-    std::function<void(shared_ptr<TCPConnection>)>;
+    std::function<void(shared_ptr<TCPConnection>&&)>;
 using TCPCallBack = std::function<void(TCPConnection&)>;
 
 class Acceptor {
@@ -69,8 +73,8 @@ public:
     virtual ~Connector();
     Connector& set_local_addr(Ipv4Addr addr);
     Connector& set_connect_to_addr(Ipv4Addr addr);
-    Connector& set_connect_callback(MoveTCPConnectionCallBack&& cb);
     Connector& set_connect_stretegy(int flag = 0);
+    Connector& set_connect_callback(MoveTCPConnectionCallBack&& cb);
     void epoll_and_connect(time_ms_t after = 0);
     TCPSTATE get_state();
 
@@ -79,7 +83,7 @@ private:
     bool try_connect_once();
     void handle_epoll_connected();
     void close();
-    int connect_stretegy_flag_;
+    int connect_stretegy_flag_ = 0;
     TCPSTATE tcpstate_;
     EventManager* emp_;
     MoveTCPConnectionCallBack movecb_;
@@ -110,7 +114,8 @@ public:
     Buffer& get_rb_ref();
     Buffer& get_wb_ref();
     Ipv4Addr get_peer();
-    void close();
+    void local_close();
+    void peer_close();
     TCPSTATE get_state();
 
 private:
@@ -133,29 +138,47 @@ public:
     TCPServer(EventManagerWrapper* emwp, MsgResponser* msg_responser,
               Ipv4Addr listen_ip, uint32_t maxtcpcon = 800, bool period_remove_expired_tcpcon_flag = false);
     virtual ~TCPServer();
+    TCPServer& set_tcpcon_after_connected_callback(TCPCallBack&& cb);
     TCPServer& set_accept_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb); // you should store seqno or get_shared_tcpcon_ref_by_seqno and get peer name and register_cb_for_con_of_seqno in msg_responser_ in this cb.
-    // unique_ptr<Acceptor>& get_uni_acceptor_ref();
+    TCPServer& set_tcpcon_read_size_callback(SizeCallBack&& cb);
+    TCPServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
     shared_ptr<TCPConnection>& get_shared_tcpcon_ref_by_seqno(uint32_t seqno);
-
+    TCPSTATE get_state();
 private:
     void period_remove_expired_tcpcon();
     void remove_expired_tcpcon_once();
+    TCPCallBack after_connected_;
+    GetSeqnoCallBack seqno_cb_;
+    SizeCallBack size_cb_;
+    MsgResponserCallBack msg_responser_cb_;
     const int maxtcpcon_;
     EventManager* const emp_;
-    MsgResponser* const msg_responser_;
     const Ipv4Addr listen_ip_;
     uint32_t seqno_;
-    GetSeqnoCallBack cb_;
     unique_ptr<Acceptor> unip_acceptor_;
     map<uint32_t, shared_ptr<TCPConnection>> tcpcon_map_;
 };
 
 class TCPClient : private noncopyable {
 public:
-    TCPClient();
+    TCPClient(EventManagerWrapper* emwp, MsgResponser* msg_responser,
+            Ipv4Addr connect_ip, Ipv4Addr local_ip);
     virtual ~TCPClient();
-
+    TCPClient& set_tcpcon_after_connected_callback(TCPCallBack&& cb);
+    TCPClient& set_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb); // you should store seqno or get_shared_tcpcon_ref_by_seqno and get peer name and register_cb_for_con_of_seqno in msg_responser_ in this cb.
+    TCPClient& set_tcpcon_read_size_callback(SizeCallBack&& cb);
+    TCPClient& set_msg_responser_callback(MsgResponserCallBack&& cb);
+    shared_ptr<TCPConnection>& get_shared_tcpcon_ref();
+    TCPSTATE get_state();
 private:
+    uint32_t generate_seqno_of_this_con();
+    TCPCallBack after_connected_;
+    GetSeqnoCallBack seqno_cb_;
+    SizeCallBack size_cb_;
+    MsgResponserCallBack msg_responser_cb_;
+    Ipv4Addr connect_ip_;
+    Ipv4Addr local_ip_;
+    EventManager* const emp_;
     unique_ptr<Connector> unip_connector_;
     shared_ptr<TCPConnection> tcpcon_;
 };

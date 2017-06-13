@@ -19,14 +19,7 @@ public:
 private:
     size_t mini_size_ = 1;
     map<uint32_t, MsgResponserDoCallBack> cb_map_;
-    MsgResponserDoCallBack echo_do_it = [](Buffer& rb, Buffer wb) {
-        char readto[rb.get_readable_bytes()];
-        rb.read_from_buffer(readto, rb.get_readable_bytes());
-        auto consume_size = strlen(readto);
-        rb.consume(consume_size);
-        char* result = readto;
-        wb.write_to_buffer(result, strlen(result));
-    };  // this would be invoked if no cb for particular seqno
+    MsgResponserDoCallBack echo_do_it; // this would be invoked if no cb for particular seqno
 };
 } /* my_http  */
 #endif /* ifndef MSG_RESPONSER_H */
