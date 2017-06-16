@@ -33,12 +33,14 @@ enum class TCPSTATE {
     Peerclosed = 5,
     Localclosed = 6,
     Failed = 7,
-    Newborn = 8
+    Newborn = 8,
+    Connected = 9
 };
 
 std::ostream& operator<<(std::ostream& os, TCPSTATE state);
 
-using MsgResponserCallBack = std::function<void(uint32_t, Buffer&, Buffer&)>;
+using BigFileSendCallBack = std::function<void(string)>;    // this would invoke sendfile() systemcall for large file like pdf to reduce memory copy and effective performance, string would be used to get the full path of file.
+using MsgResponserCallBack = std::function<void(uint32_t, Buffer&, Buffer&, BigFileSendCallBack&&)>;
 using SizeCallBack = std::function<size_t()>;
 using GetSeqnoCallBack = std::function<void(uint32_t)>;
 using MoveTCPConnectionCallBack =
@@ -56,7 +58,7 @@ public:
     TCPSTATE get_state();
 
 private:
-    void listen_it();
+    void listen_it_and_accept();
     void handle_epoll_readable();
     TCPSTATE tcpstate_;
     EventManager* const
@@ -64,7 +66,7 @@ private:
     MoveTCPConnectionCallBack movecb_;
     Ipv4Addr listened_ip_;
     unique_ptr<Channel> listened_socket_;
-    size_t accepted_count_;
+    size_t accepted_count_ = 0;
 };
 
 class Connector {
@@ -80,10 +82,11 @@ public:
 
 private:
     void connect_it();
-    bool try_connect_once();
+    void try_connect_once();
     void handle_epoll_connected();
     void close();
     int connect_stretegy_flag_ = 0;
+    size_t retry_count_ = 0;
     TCPSTATE tcpstate_;
     EventManager* emp_;
     MoveTCPConnectionCallBack movecb_;
@@ -101,8 +104,10 @@ public:
     virtual ~TCPConnection();
     TCPConnection& set_normal_readable_callback(TCPCallBack&& cb);
     TCPConnection& set_normal_writable_callback(TCPCallBack&& cb);
-    TCPConnection& set_peer_close_readable_callback(TCPCallBack&& cb);
+    TCPConnection& set_peer_close_callback(TCPCallBack&& cb);
+    TCPConnection& set_local_close_callback(TCPCallBack&& cb);
     TCPConnection& set_idle_callback();
+    TCPConnection& set_seqno_of_server(uint32_t seqno);
     void epoll_and_conmunicate();
     // nonblocking read and write
     size_t try_to_write(size_t len);
@@ -114,6 +119,8 @@ public:
     Buffer& get_rb_ref();
     Buffer& get_wb_ref();
     Ipv4Addr get_peer();
+    uint32_t get_seqno();
+    BigFileSendCallBack get_bigfilesendcb();
     void local_close();
     void peer_close();
     TCPSTATE get_state();
@@ -123,7 +130,9 @@ private:
     TCPCallBack nread_cb_;
     TCPCallBack nwrite_cb_;
     TCPCallBack close_cb_;
+    TCPCallBack local_close_cb_;
     TCPSTATE tcpstate_;
+    uint32_t seqno_;
     Buffer read_sock_to_this_, write_sock_from_this_;
     void handle_epoll_readable();
     void handle_epoll_writable();
@@ -136,7 +145,7 @@ private:
 class TCPServer : private noncopyable {
 public:
     TCPServer(EventManagerWrapper* emwp, MsgResponser* msg_responser,
-              Ipv4Addr listen_ip, uint32_t maxtcpcon = 800, bool period_remove_expired_tcpcon_flag = false);
+              Ipv4Addr listen_ip, uint32_t maxtcpcon = 800);
     virtual ~TCPServer();
     TCPServer& set_tcpcon_after_connected_callback(TCPCallBack&& cb);
     TCPServer& set_accept_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb); // you should store seqno or get_shared_tcpcon_ref_by_seqno and get peer name and register_cb_for_con_of_seqno in msg_responser_ in this cb.
@@ -144,9 +153,8 @@ public:
     TCPServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
     shared_ptr<TCPConnection>& get_shared_tcpcon_ref_by_seqno(uint32_t seqno);
     TCPSTATE get_state();
+    void remove_tcpcon_by_seqno(uint32_t);
 private:
-    void period_remove_expired_tcpcon();
-    void remove_expired_tcpcon_once();
     TCPCallBack after_connected_;
     GetSeqnoCallBack seqno_cb_;
     SizeCallBack size_cb_;

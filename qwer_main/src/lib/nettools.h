@@ -47,7 +47,7 @@ private:
     // TODO add own allocator
     vector<char> buffer_;
     bool invariant_check() throw(std::runtime_error);
-    void invariant_check_wrap();
+    void invariant_check_wrap() throw(std::runtime_error);
     size_t begin_, end_, capacity_;
     //                 begin_              end_      capacity_    
     //    used& consumed | unconsumed &  not used |         |

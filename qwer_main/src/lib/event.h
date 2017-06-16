@@ -15,7 +15,9 @@ namespace my_http {
 
     // translate from Event to EventEnum in EventManagerWrapper::register_event()
     enum class EventEnum {IODemultiplexCB, IORead, IOWrite,
-                        Timeout, PeerShutDown};
+                        Timeout, PeerShutDown, IOReadET};
+
+    std::ostream& operator<<(std::ostream&, EventEnum);
 
     EventEnum uint2enum(uint32_t event);
     uint32_t enum2uint(EventEnum eventenum);
@@ -24,14 +26,11 @@ namespace my_http {
         public:
             EventManager();
             virtual ~EventManager();
-            void handle_event(EventEnum para_enum, Channel* p_ch);
-            void register_event(Channel* p_ch, CallBack&& cb);
+            //void register_event(Channel* p_ch, CallBack&& cb);
             void register_event(uint32_t event, Channel* p_ch, CallBack&& cb);
-            void remove_registered_event();
+            void remove_registered_event(uint32_t event, Channel* p_ch);
             TimerId run_at(time_ms_t para_t, CallBack&& cb);    // means after FIXME
             TimerId run_after(time_ms_t para_t, CallBack&& cb);
-            void check_state_of_timerid(TimerId tid);
-            //TimerId run_after(time_ms_t para_t, CallBack&& cb);
             void loop();
             void loop_once(time_ms_t timeout);
             void add_active_event(EventEnum para_enum, Channel* p_ch);
@@ -54,7 +53,8 @@ namespace my_http {
             virtual ~EventManagerWrapper ();
             void loop_once(int timeout);
             void loop();
-            void register_event(Channel* p_ch, CallBack&& cb);
+            //void register_event(Channel* p_ch, CallBack&& cb);
+            void register_event(uint32_t event, Channel* p_ch, CallBack&& cb);
             TimerId run_at(time_ms_t para_t, CallBack&& cb);    // after
             void exit();
             EventManager* get_pimpl();

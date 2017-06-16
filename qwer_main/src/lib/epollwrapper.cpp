@@ -16,7 +16,6 @@ namespace my_http {
         LOG_INFO("here");
         epoll_instance_fd_ = epoll_create(size);
         if (epoll_instance_fd_ < 0) {
-            // TODO postcondition check
             NOTDONE();
         }
     }
@@ -28,10 +27,14 @@ namespace my_http {
         epoll_event_ob.events = p_ch->get_events();
         epoll_event_ob.data.ptr = p_ch;
         assert(epoll_instance_fd_ >= 0);
-        int check = epoll_ctl(epoll_instance_fd_, EPOLL_CTL_ADD, p_ch->get_fd(), &epoll_event_ob);
+        int check = ::epoll_ctl(epoll_instance_fd_, EPOLL_CTL_ADD, p_ch->get_fd(), &epoll_event_ob);
         if (check < 0) {
-            // TODO handle error
-            NOTDONE();
+            if (errno == EEXIST) {
+                ModChannel(p_ch);
+            } else {
+                SLOG_ERROR("errno = " << strerror(errno));
+                NOTDONE();
+            }
         }
     }
 
@@ -41,19 +44,19 @@ namespace my_http {
         memset(&epoll_event_ob, 0, sizeof(epoll_event_ob));
         epoll_event_ob.events = p_ch->get_events();
         epoll_event_ob.data.ptr = p_ch;
-        int check = epoll_ctl(epoll_instance_fd_, EPOLL_CTL_MOD, p_ch->get_fd(), &epoll_event_ob);
+        int check = ::epoll_ctl(epoll_instance_fd_, EPOLL_CTL_MOD, p_ch->get_fd(), &epoll_event_ob);
         if (check < 0) {
-            // TODO
-                    NOTDONE();
+            NOTDONE();
         }
     }
 
     // Channel object is owned by TCPconnection ob
     void epollwrapper::DelChannel(Channel* p_ch) {
         LOG_INFO("here");
-        if (p_ch->is_closed()) {
-            active_channels_.erase(active_channels_.find(p_ch));
-            epoll_ctl(epoll_instance_fd_, EPOLL_CTL_DEL, p_ch->get_fd(), NULL);
+        auto check = ::epoll_ctl(epoll_instance_fd_, EPOLL_CTL_DEL, p_ch->get_fd(), NULL);
+        p_ch->set_events(0);
+        if (check != 0) {
+            LOG_ERROR("fail to delchannel");
         }
     }
 
@@ -61,7 +64,6 @@ namespace my_http {
         LOG_INFO("enter epollwrapper::loop_once loop timeout = %d milisec, now is %s", time, TimeStamp().init_stamp_of_now().tostring().c_str());
         int ready = epoll_wait(epoll_instance_fd_, &*epoll_vec_.begin(), MaxEvents, time);
         if (ready < 0) {
-            // TODO handle error
             NOTDONE();
         } else if (ready == 0) {
             LOG_INFO("this epoll_wait return zero");
@@ -71,11 +73,13 @@ namespace my_http {
             int active_event = epoll_vec_[ready].events;
             if (p_ch) {
                 if (emp_ != nullptr) {
-                    if (active_event & EPOLLIN) {
+                    if ((active_event & EPOLLIN) && (active_event & EPOLLET)) {
+                        emp_->add_active_event(EventEnum::IOReadET, p_ch);      // never happen FIXME
+                    } else if (active_event & EPOLLIN) {
                         emp_->add_active_event(EventEnum::IORead, p_ch);
                     } else if (active_event & EPOLLOUT) {
                         emp_->add_active_event(EventEnum::IOWrite, p_ch);
-                    } else if (active_event & EPOLLRDHUP) {
+                    } else if (active_event & EPOLLHUP) {
                         emp_->add_active_event(EventEnum::PeerShutDown, p_ch);
                     } else {
                         NOTDONE();

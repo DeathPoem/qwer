@@ -1,4 +1,5 @@
 #include "tcpserver.h"
+
 namespace my_http {
 
 std::ostream& operator<<(std::ostream& os, TCPSTATE state) {
@@ -21,6 +22,8 @@ std::ostream& operator<<(std::ostream& os, TCPSTATE state) {
         str = "Failed";
     } else if (state == TCPSTATE::Newborn) {
         str = "Newborn";
+    } else if (state == TCPSTATE::Connected) {
+        str = "Connected";
     } else {
         NOTDONE();
     }
@@ -35,19 +38,15 @@ Acceptor::Acceptor(EventManagerWrapper* emwp)
     if (listen_fd < 0) {
         NOTDONE();
     }
-    int flags = fcntl(listen_fd, F_GETFL, 0);
-    if (flags < 0) {
-        NOTDONE();
-    }
-    auto check = fcntl(listen_fd, F_SETFL, flags | O_NONBLOCK);
-    if (check < 0) {
-        NOTDONE();
-    }
-    listened_socket_->set_events(Channel::get_readonly_event_flag());
+    set_nonblock(listen_fd);
     tcpstate_ = TCPSTATE::Newborn;
 }
 
-Acceptor::~Acceptor() {}
+Acceptor::~Acceptor() {
+    //TODO
+    // disregister
+    SLOG_INFO("Acceptor destruct" << ";tcp state=" << tcpstate_);
+}
 
 Acceptor& Acceptor::set_listen_addr(Ipv4Addr addr) {
     // std::swap(listened_ip_, addr);
@@ -61,21 +60,30 @@ Acceptor& Acceptor::set_accept_readable_callback(
     return *this;
 }
 
-void Acceptor::listen_it() {
+void Acceptor::listen_it_and_accept(){
     listened_ip_.ip_bind_socketfd(listened_socket_->get_fd());
     auto check = ::listen(listened_socket_->get_fd(), SOMAXCONN);
-    tcpstate_ = TCPSTATE::Listening;
     if (check != 0) {
         NOTDONE();
+    }
+    tcpstate_ = TCPSTATE::Listening;
+    if (movecb_ != nullptr) {
+        LOG_INFO("acceptor register accept epoll readable cb");
+        emp_->register_event(Channel::get_readonly_event_flag(), listened_socket_.get(), [this]() {
+            SLOG_INFO("in Acceptor::accept callback, accepted_count_ ="
+                              << accepted_count_++);
+            handle_epoll_readable();
+        });
     } else {
+        NOTDONE();
     }
 }
 
 void Acceptor::handle_epoll_readable() {
     // when socketfd is readable, you can accept new fd
-    int new_fd;
+    int new_fd = -1;
     Ipv4Addr peer;
-    unsigned int len = sizeof(peer.get_p_socketaddr());
+    unsigned int len = sizeof(*peer.get_p_socketaddr());
     while (listened_socket_->get_fd() &&
            (new_fd = ::accept(listened_socket_->get_fd(),
                               peer.get_p_socketaddr(), &len)) >= 0) {
@@ -84,11 +92,13 @@ void Acceptor::handle_epoll_readable() {
             // no more
             break;
         }
-        auto check = ::getpeername(listened_socket_->get_fd(),
+        auto check = ::getpeername(new_fd,
                                    peer.get_p_socketaddr(), &len);
         if (check != 0) {
+            SLOG_ERROR("errno = " << strerror(errno));
             NOTDONE();
         }
+        set_nonblock(new_fd);
         shared_ptr<TCPConnection> shared_p_tc(
             new TCPConnection(emp_, new_fd, listened_ip_, peer));
         movecb_(std::move(shared_p_tc));
@@ -96,17 +106,8 @@ void Acceptor::handle_epoll_readable() {
 }
 
 void Acceptor::epoll_and_accept(time_ms_t after) {
-    emp_->run_after(after, std::bind(&Acceptor::listen_it, this));
-    if (movecb_ != nullptr && (listened_socket_->get_events() & EPOLLIN)) {
-        emp_->register_event(listened_socket_.get(), [this]() {
-            SLOG_INFO("in Acceptor::accept callback, accepted_count_ ="
-                      << accepted_count_);
-            handle_epoll_readable();
-        });
-    } else {
-        auto check_1 = (listened_socket_->get_events() & EPOLLIN);
-        NOTDONE();
-    }
+    LOG_INFO("in epoll_and_accept");
+    emp_->run_after(after, std::bind(&Acceptor::listen_it_and_accept, this));
 }
 
 int detail::create_socketfd() {
@@ -121,18 +122,15 @@ Connector::Connector(EventManagerWrapper* emwp)
     if (fd < 0) {
         NOTDONE();
     }
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0) {
-        NOTDONE();
-    }
-    auto check = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-    if (check < 0) {
-        NOTDONE();
-    }
+    set_nonblock(fd);
     tcpstate_ = TCPSTATE::Newborn;
 }
 
-Connector::~Connector() {}
+Connector::~Connector() {
+    //TODO
+    // disregister
+    LOG_INFO("Acceptor destruct");
+}
 
 Connector& Connector::set_local_addr(Ipv4Addr addr) {
     // std::swap(local_ip_, addr);
@@ -153,18 +151,22 @@ Connector& Connector::set_connect_callback(MoveTCPConnectionCallBack&& cb) {
 
 void Connector::connect_it() {
     tcpstate_ = TCPSTATE::Tryconnect;
-    local_ip_.ip_bind_socketfd(to_connect_socket_->get_fd());
     if (connect_stretegy_flag_ == 0) {
-        auto check = try_connect_once();
-        if (check) {
-            to_connect_socket_->set_events(Channel::get_readonly_event_flag());
+        try_connect_once();
+        if (tcpstate_ == TCPSTATE::Connected) {
             shared_ptr<TCPConnection> shared_p_tc(
                 new TCPConnection(emp_, std::move(to_connect_socket_),
                                   local_ip_, to_connect_ip_));
             movecb_(std::move(shared_p_tc));
+            close();
+        } else {
+            if (retry_count_++ < 5) {
+                emp_->run_after(100, std::bind(&Connector::connect_it, this));
+            } else {
+                LOG_WARN("retry connect fail");
+            }
         }
     } else {
-        // may try to reconnect
         NOTDONE();
     }
 }
@@ -178,8 +180,9 @@ void Connector::close() {
 }
 
 void Connector::handle_epoll_connected() {
+    LOG_INFO("in connector-handle epoll connected()");
+    local_ip_.ip_bind_socketfd(to_connect_socket_->get_fd());
     connect_it();
-    close();
 }
 
 Connector& Connector::set_connect_stretegy(int flag) {
@@ -187,18 +190,24 @@ Connector& Connector::set_connect_stretegy(int flag) {
     return *this;
 }
 
-bool Connector::try_connect_once() {
-    unsigned int len = sizeof(to_connect_ip_.get_p_socketaddr());
+void Connector::try_connect_once() {
+    unsigned int len = sizeof(*to_connect_ip_.get_p_socketaddr());
     int check = ::connect(to_connect_socket_->get_fd(),
                           to_connect_ip_.get_p_socketaddr(), len);
-    if (check != 0) {
-        NOTDONE();
+    if (check != 0 && errno == 115) {
+        SLOG_WARN("when ::connect to nonblocking socket fd, would cause this" << strerror(errno) << ", the socket would be ready in short");
+        tcpstate_ = TCPSTATE::Connected;
+    } else if (check != 0 && errno != 115) {
+        SLOG_WARN("fail to connect, try to connect more" << ";errorstr is " << strerror(errno) << ";errno=" << errno);
+    } else if (check == 0) {
+        tcpstate_ = TCPSTATE::Connected;
     } else {
-        return true;
+        NOTDONE();
     }
 }
 
 void Connector::epoll_and_connect(time_ms_t after) {
+    LOG_INFO("in connector epoll and connect");
     emp_->run_after(after, std::bind(&Connector::handle_epoll_connected, this));
 }
 
@@ -217,7 +226,11 @@ TCPConnection::TCPConnection(EventManager* emp, unique_ptr<Channel> socket_ch,
     tcpstate_ = TCPSTATE::Afterhandshake;
 }
 
-TCPConnection::~TCPConnection() {}
+TCPConnection::~TCPConnection() {
+    //TODO
+    // disregister
+    LOG_INFO("one TCPConnection destruct");
+}
 
 TCPConnection& TCPConnection::set_normal_readable_callback(TCPCallBack&& cb) {
     nread_cb_ = std::move(cb);
@@ -229,35 +242,49 @@ TCPConnection& TCPConnection::set_normal_writable_callback(TCPCallBack&& cb) {
     return *this;
 }
 
-TCPConnection& TCPConnection::set_peer_close_readable_callback(
-    TCPCallBack&& cb) {
+TCPConnection& TCPConnection::set_peer_close_callback(TCPCallBack&& cb) {
     close_cb_ = std::move(cb);
     return *this;
+}
+
+TCPConnection& TCPConnection::set_local_close_callback(TCPCallBack&& cb) {
+    local_close_cb_ = std::move(cb);
+    return *this;
+}
+
+TCPSTATE TCPConnection::get_state() {
+    return tcpstate_;
+}
+
+BigFileSendCallBack TCPConnection::get_bigfilesendcb() {
+    return [](string s) {
+        LOG_ERROR("not done yet");
+    };
 }
 
 TCPConnection& TCPConnection::set_idle_callback() { return *this; }
 
 void TCPConnection::epoll_and_conmunicate() {
-    if (nread_cb_ != nullptr && (unique_p_ch_->get_events() & EPOLLIN)) {
-        emp_->register_event(unique_p_ch_.get(),
+    if (nread_cb_ != nullptr) {
+        //emp_->register_event(Channel::get_readonly_event_flag() | Channel::get_edge_trigger_flag(), unique_p_ch_.get(),
+        // FIXME this code won't detect socket read?
+        // FIXME the following code would lead to empty read socket
+        emp_->register_event(Channel::get_readonly_event_flag(), unique_p_ch_.get(),
                              [this]() { handle_epoll_readable(); });
     }
-    if (nwrite_cb_ != nullptr && (unique_p_ch_->get_events() & EPOLLOUT)) {
-        emp_->register_event(unique_p_ch_.get(),
-                             [this]() { handle_epoll_readable(); });
+    if (nwrite_cb_ != nullptr) {
+        emp_->register_event(Channel::get_writeonly_event_flag(), unique_p_ch_.get(),
+                             [this]() { handle_epoll_writable(); });
     }
-    if (close_cb_ != nullptr && (unique_p_ch_->get_events() & EPOLLRDHUP)) {
-        emp_->register_event(unique_p_ch_.get(),
-                             [this]() { handle_epoll_readable(); });
+    if (close_cb_ != nullptr) {
+        emp_->register_event(Channel::get_peer_shutdown_flag(), unique_p_ch_.get(),
+                             [this]() { handle_epoll_peer_shut_down(); });
     }
 }
 
 void TCPConnection::handle_epoll_readable() { nread_cb_(*this); }
 
-void TCPConnection::handle_epoll_peer_shut_down() {
-    close_cb_(*this);
-    peer_close();
-}
+void TCPConnection::handle_epoll_peer_shut_down() { peer_close(); }
 
 void TCPConnection::handle_epoll_writable() { nwrite_cb_(*this); }
 
@@ -268,18 +295,26 @@ Buffer& TCPConnection::get_wb_ref() { return write_sock_from_this_; }
 Ipv4Addr TCPConnection::get_peer() { return peer_; }
 
 size_t TCPConnection::try_to_read(size_t len) {
-    int nread = read_sock_to_this_.write_to_buffer(unique_p_ch_->get_fd(), len);
+    size_t nread;
+    nread = read_sock_to_this_.write_to_buffer(unique_p_ch_->get_fd(), len);
     if (nread == len) {
         return nread;
     } else {
+        SLOG_ERROR("nread = " << nread << ";len=" << len);
         NOTDONE();
     }
 }
 
 size_t TCPConnection::try_to_read() {
-    size_t len;
+    int len;
     int check = ::ioctl(unique_p_ch_->get_fd(), FIONREAD, &len);
-    return try_to_read(len);
+    if (check != 0) {NOTDONE();}
+    if (len == 0) {
+        LOG_WARN("try to read empty");
+        return 0;
+    } else {
+        return try_to_read(len);
+    }
 }
 
 string TCPConnection::read_by_string() {
@@ -288,6 +323,8 @@ string TCPConnection::read_by_string() {
     assert(1000 > nread);
     int check = read_sock_to_this_.read_from_buffer(str_c, nread);
     if (nread == check) {
+        SLOG_INFO("check =" << check);
+        //read_sock_to_this_.consume(nread);        this consume should be done in app
         return string(str_c);
     } else {
         NOTDONE();
@@ -296,8 +333,9 @@ string TCPConnection::read_by_string() {
 
 void TCPConnection::write_by_string(string str) {
     char* str_c = &str[0];
-    int nwrite = write_sock_from_this_.write_to_buffer(str_c, str.size());
-    assert(nwrite == str.size());
+    size_t size = str.size();
+    int nwrite = write_sock_from_this_.write_to_buffer(str_c, size);
+    assert(nwrite == size);
     auto check = try_to_write();
     if (check == nwrite) {
     } else {
@@ -314,72 +352,99 @@ size_t TCPConnection::try_to_write(size_t len) {
     int nwrite =
         write_sock_from_this_.read_from_buffer(unique_p_ch_->get_fd(), len);
     if (nwrite == len) {
+        write_sock_from_this_.consume(len);
         return nwrite;
     } else {
         NOTDONE();
-        return -1;
     }
 }
 
+TCPConnection& TCPConnection::set_seqno_of_server(uint32_t seqno) {
+    seqno_ = seqno;
+    return *this;
+}
+
+uint32_t TCPConnection::get_seqno() { return seqno_; }
+
 void TCPConnection::local_close() {
     tcpstate_ = TCPSTATE::Localclosed;
+    unique_p_ch_->shutdown();
+    local_close_cb_(*this);
     LOG_INFO("local TCPConnection close");
 }
 
 void TCPConnection::peer_close() {
     tcpstate_ = TCPSTATE::Peerclosed;
+    close_cb_(*this);
     LOG_INFO("peer close");
 }
 
 TCPServer::TCPServer(EventManagerWrapper* emwp, MsgResponser* msg_responser,
-                     Ipv4Addr listen_ip, uint32_t maxtcpcon,
-                     bool period_remove_expired_tcpcon_flag)
+                     Ipv4Addr listen_ip, uint32_t maxtcpcon)
     : emp_(emwp->get_pimpl()),
       listen_ip_(listen_ip),
       maxtcpcon_(maxtcpcon),
       unip_acceptor_(new Acceptor(emwp)) {
     seqno_ = 0;
-    if (period_remove_expired_tcpcon_flag) {
-        period_remove_expired_tcpcon();
-    }
     unip_acceptor_->set_listen_addr(listen_ip_)
-        .set_accept_readable_callback([this](
-            shared_ptr<TCPConnection>&& shared_p_tc) {
-            tcpcon_map_[seqno_] = shared_p_tc;
-            auto seqno_tmp = seqno_;
-            if (seqno_cb_ == nullptr) { ABORT("do you remember to set callback?"); }
-            seqno_cb_(seqno_++);
-            if (after_connected_ == nullptr) {
-
-            } else {
-                after_connected_(*tcpcon_map_[seqno_tmp]);
-            }
-            tcpcon_map_[seqno_tmp]
-                ->set_normal_readable_callback(
-                    [this, seqno_tmp](TCPConnection& this_con) {
-                        if (size_cb_ == nullptr) {NOTDONE();}
-                        size_t size = size_cb_();
-                        auto check = this_con.try_to_read(size);
-                        if (check >= size) {
-                            auto& rbuffer = this_con.get_rb_ref();
-                            auto& wbuffer = this_con.get_wb_ref();
-                            if (msg_responser_cb_ == nullptr) {NOTDONE();}
-                            msg_responser_cb_( seqno_tmp, rbuffer, wbuffer);
-                            this_con.try_to_write();
-                        } else {
-                            NOTDONE();
-                        }
+        .set_accept_readable_callback(
+            [this](shared_ptr<TCPConnection>&& shared_p_tc) {
+                tcpcon_map_[seqno_] = shared_p_tc;
+                auto seqno_tmp = seqno_++;
+                if (seqno_cb_ == nullptr) {
+                    ABORT("did you remember to set callback?");
+                }
+                seqno_cb_(seqno_tmp);
+                tcpcon_map_[seqno_tmp]->set_seqno_of_server(seqno_tmp);
+                if (after_connected_ == nullptr) {
+                } else {
+                    after_connected_(*tcpcon_map_[seqno_tmp]);
+                }
+                tcpcon_map_[seqno_tmp]
+                    ->set_normal_readable_callback(
+                        [this, seqno_tmp](TCPConnection& this_con) {
+                            if (size_cb_ == nullptr) {
+                                ABORT("did you remember to set callback?");
+                            }
+                            size_t size = size_cb_();
+                            auto check = this_con.try_to_read(size);
+                            if (check >= size) {
+                                auto& rbuffer = this_con.get_rb_ref();
+                                auto& wbuffer = this_con.get_wb_ref();
+                                if (msg_responser_cb_ == nullptr) {
+                                    ABORT("did you remember to set callback?");
+                                }
+                                msg_responser_cb_(seqno_tmp, rbuffer, wbuffer, this_con.get_bigfilesendcb());
+                                this_con.try_to_write();
+                            } else {
+                                NOTDONE();
+                            }
+                        })
+                    .set_local_close_callback([this](TCPConnection& this_con) {
+                        LOG_DEBUG("local close ");
+                        remove_tcpcon_by_seqno(this_con.get_seqno());
                     })
-                .set_peer_close_readable_callback([](TCPConnection& this_con) {
-                    this_con.peer_close();
-                    LOG_DEBUG("peer down");
-                })
-                .epoll_and_conmunicate();
-        })
+                    .set_peer_close_callback([this](TCPConnection& this_con) {
+                        remove_tcpcon_by_seqno(this_con.get_seqno());
+                        LOG_DEBUG("peer down");
+                    })
+                    .epoll_and_conmunicate();
+            })
         .epoll_and_accept();
 }
 
-TCPServer::~TCPServer() {}
+TCPServer::~TCPServer() {
+    LOG_INFO("TCPServer destruct");
+}
+
+void TCPServer::remove_tcpcon_by_seqno(uint32_t seqno) {
+    auto found = tcpcon_map_.find(seqno);
+    if (TCPSTATE::Gooddead == get<1>(*found)->get_state()) {
+        tcpcon_map_.erase(found);
+    } else {
+        NOTDONE();
+    }
+}
 
 TCPServer& TCPServer::set_tcpcon_read_size_callback(SizeCallBack&& cb) {
     size_cb_ = std::move(cb);
@@ -391,7 +456,8 @@ TCPServer& TCPServer::set_tcpcon_after_connected_callback(TCPCallBack&& cb) {
     return *this;
 }
 
-TCPServer& TCPServer::set_accept_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb) {
+TCPServer& TCPServer::set_accept_get_tcpcon_seqno_callback(
+    GetSeqnoCallBack&& cb) {
     seqno_cb_ = std::move(cb);
     return *this;
 }
@@ -413,20 +479,7 @@ shared_ptr<TCPConnection>& TCPServer::get_shared_tcpcon_ref_by_seqno(
     }
 }
 
-void TCPServer::period_remove_expired_tcpcon() {
-    emp_->run_after(1000, [this]() {
-        remove_expired_tcpcon_once();
-        period_remove_expired_tcpcon();
-    });
-}
-
-void TCPServer::remove_expired_tcpcon_once() {
-    //TODO
-}
-
-TCPSTATE TCPServer::get_state() {
-    NOTDONE();
-}
+TCPSTATE TCPServer::get_state() { NOTDONE(); }
 
 TCPClient::TCPClient(EventManagerWrapper* emwp, MsgResponser* msg_responser,
                      Ipv4Addr connect_ip, Ipv4Addr local_ip)
@@ -437,41 +490,49 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, MsgResponser* msg_responser,
     unip_connector_->set_local_addr(local_ip_)
         .set_connect_to_addr(connect_ip_)
         .set_connect_callback([this](shared_ptr<TCPConnection>&& shared_p_tc) {
-            if (tcpcon_ != nullptr) { NOTDONE(); }
+            if (tcpcon_ != nullptr) {
+                NOTDONE();
+            }
             tcpcon_ = shared_p_tc;
-            if (seqno_cb_ == nullptr) { NOTDONE(); }
+            if (seqno_cb_ == nullptr) {
+                ABORT("did you remember to set callback?");
+            }
             auto seqno_tmp = generate_seqno_of_this_con();
             seqno_cb_(seqno_tmp);
             if (after_connected_ == nullptr) {
-
             } else {
                 after_connected_(*tcpcon_);
             }
-            tcpcon_->set_normal_readable_callback(
+            tcpcon_
+                ->set_normal_readable_callback(
                     [this, seqno_tmp](TCPConnection& this_con) {
-                        if (size_cb_ == nullptr) {NOTDONE();}
+                        if (size_cb_ == nullptr) {
+                            ABORT("did you remember to set callback?");
+                        }
                         size_t size = size_cb_();
                         auto check = this_con.try_to_read(size);
                         if (check >= size) {
                             auto& rbuffer = this_con.get_rb_ref();
                             auto& wbuffer = this_con.get_wb_ref();
-                            if (msg_responser_cb_ == nullptr) {NOTDONE();}
-                            msg_responser_cb_(seqno_tmp, rbuffer, wbuffer);
+                            if (msg_responser_cb_ == nullptr) {
+                                ABORT("did you remember to set callback?");
+                            }
+                            msg_responser_cb_(seqno_tmp, rbuffer, wbuffer, this_con.get_bigfilesendcb());
                             this_con.try_to_write();
                         } else {
                             NOTDONE();
                         }
                     })
-                .set_peer_close_readable_callback([](TCPConnection& this_con) {
-                    this_con.peer_close();
-                    LOG_DEBUG("peer down");
-                })
+                .set_peer_close_callback(
+                    [](TCPConnection& this_con) { LOG_DEBUG("peer down"); })
                 .epoll_and_conmunicate();
         })
         .epoll_and_connect();
 }
 
-TCPClient::~TCPClient() {}
+TCPClient::~TCPClient() {
+    LOG_INFO("TCPClient destruct");
+}
 
 TCPClient& TCPClient::set_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb) {
     seqno_cb_ = std::move(cb);
@@ -497,7 +558,10 @@ shared_ptr<TCPConnection>& TCPClient::get_shared_tcpcon_ref() {
     return tcpcon_;
 }
 
-TCPSTATE TCPClient::get_state() {
-    NOTDONE();
+TCPSTATE TCPClient::get_state() { NOTDONE(); }
+
+uint32_t TCPClient::generate_seqno_of_this_con() {
+    //TODO
+    return 11111;
 }
 } /* my_http  */

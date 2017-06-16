@@ -10,7 +10,7 @@ namespace my_http {
         s = spec_.tv_sec;
         ms = round(spec_.tv_nsec / 1.0e6);
         char c_str[400];
-        sprintf(c_str, "TimeStamp: %ld.%03ld seconds since the Epoch",
+        sprintf(c_str, "TimeStamp: %ld.%03ld seconds since the Epoch.",
                 (intmax_t)s, ms);
         return string(c_str);
     }
@@ -142,14 +142,41 @@ namespace my_http {
         return os << rhs.tostring();
     }
 
+    string get_time_of_now() {
+        return TimeStamp().init_stamp_of_now().tostring();
+    }
+
     Logger::Logger() {
         fd_ = -1;
     }
 
     Logger::~Logger() {
+        change_or_quit();
+    }
+
+    static std::mutex m_logger_;
+
+    void Logger::change_or_quit() {
+        std::lock_guard<std::mutex> lk(m_logger_);
         if (fd_ != -1) {
+            if (buffer_active_) {
+                if (x_buffer_ != nullptr) {
+                    force_write();
+                    delete[] x_buffer_;
+                    x_buffer_ = nullptr;
+                }
+            }
             close(fd_);
         }
+    }
+
+    void Logger::force_write() {
+        auto check = write(fd_, x_buffer_, x_buf_sign_);
+        if (check < 0) {
+            throw std::runtime_error(strerror(errno));
+        }
+        x_buf_sign_ -= check;
+        assert(x_buf_sign_ == 0);
     }
 
     Logger& Logger::get_logger() {
@@ -158,6 +185,7 @@ namespace my_http {
     }
 
     Logger& Logger::repare(const char* file) {
+        change_or_quit();
         int fd;
         fd = DeployLogFile(file);
         if (fd == -1) {
@@ -178,15 +206,42 @@ namespace my_http {
 
         string levelstr = level_m_.at(level);
         char buff[500];
-        sprintf(buff, "\nfilename:%s, line:%s, time:%s, level:%s <====> log:", filename, line, time, levelstr.c_str());
+        sprintf(buff, "\nfilename:%s, line:%s, time:%s \n level:%s <====> log:", filename, line, time, levelstr.c_str());
         vsprintf(buff + strlen(buff), format, arglist);
 
         if (fd_ < 0) {
             throw std::runtime_error("no fd_, please LOG_SETFILE()");
         }
-        write(fd_, buff, strlen(buff));
+        // thread safe log and file write order safe// TODO
+        if (!buffer_active_) {
+            write(fd_, buff, strlen(buff));   // original
+        } else {
+            std::lock_guard<std::mutex> lk(m_logger_);
+            buffer_repare();
+            memcpy(x_buffer_ + x_buf_sign_, buff, strlen(buff));
+            x_buf_sign_ += strlen(buff);
+            assert(x_buf_sign_ < x_size_);
+            if (x_buf_sign_ > x_size_ - 1024) {
+                force_write();
+                buffer_repare();
+            }
+        }
         va_end(arglist);
-        return strlen(buff);
+        return (int) strlen(buff);
+    }
+
+    void Logger::buffer_repare() {
+        if (x_buffer_ == nullptr) {
+            x_buffer_ = new char[x_size_];
+            memset(x_buffer_, 0, x_size_);
+            x_buf_sign_ = 0;
+        } else if (x_buffer_ != nullptr && x_buf_sign_ == 0) {
+            memset(x_buffer_, 0, x_size_);
+        }
+    }
+
+    void Logger::set_buffer_active(bool ac) {
+        buffer_active_ = ac;
     }
 
     int Logger::log(const char* format, ...) {
@@ -205,28 +260,54 @@ namespace my_http {
         return strlen(buff);
     }   
 
-    Channel::Channel(int fd) : fd_(fd) {}
+    Channel::Channel(int fd) : fd_(fd) {
+        event_ = 0;
+    }
 
-    Channel::~Channel() {}
+    Channel::~Channel() {
+        if (is_closed()) {
+
+        } else {
+            close();
+        }
+    }
 
     int Channel::get_fd() {return fd_;}
 
+    bool Channel::is_shutdown() { return  is_shutdown_;}
+
     bool Channel::is_closed() {return is_closed_;}
 
-    void Channel::close() {::close(fd_);}
+    void Channel::shutdown() { ::shutdown(fd_, SHUT_WR); is_shutdown_ = true;}
+
+    void Channel::close() {::close(fd_); is_closed_ = true;}
 
     uint32_t Channel::get_events() {return event_;}
 
-    void Channel::set_events(uint32_t para_event) {event_ = para_event;}
-
+    void Channel::set_events(uint32_t para_event) {event_ |= para_event;}
+    // TODO change it to epoll edge triggered   EPOLLET
     uint32_t Channel::get_readonly_event_flag() {return EPOLLIN;}
 
     uint32_t Channel::get_writeonly_event_flag() {return EPOLLOUT;}
+
+    uint32_t Channel::get_peer_shutdown_flag(){return EPOLLHUP;}
+
+    uint32_t Channel::get_edge_trigger_flag() { return EPOLLET;}
 
     uint32_t Channel::get_no_wr_event_flag() {return EPOLLERR;}
 
     uint32_t Channel::get_wr_event_flag() {return EPOLLIN | EPOLLOUT;}
 
+    void set_nonblock(int fd) {
+        int flags = fcntl(fd, F_GETFL, 0);
+        if (flags < 0) {
+            NOTDONE();
+        }
+        auto check = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+        if (check < 0) {
+            NOTDONE();
+        }
+    }
 } /* my_http */ 
 
 #endif /* ifndef FACILITY_CPP */

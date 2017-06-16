@@ -45,7 +45,7 @@ struct sockaddr_in Ipv4Addr::get_socketaddr_in() const {
     return addr_;
 }
 
-sockaddr* Ipv4Addr::get_p_socketaddr() { return (sockaddr*)&addr_; }
+sockaddr* Ipv4Addr::get_p_socketaddr() { return (sockaddr*)(&addr_); }
 
 int Ipv4Addr::ip_bind_socketfd(int fd) {
     int ret = ::bind(fd, (struct sockaddr*)&addr_, sizeof(addr_));
@@ -159,26 +159,34 @@ size_t Buffer::write_to_buffer(int fd, size_t len) {
     return len - left;
 }
 
-void Buffer::invariant_check_wrap() {
-    try {
+void Buffer::invariant_check_wrap() throw(std::runtime_error) {
         invariant_check();
-    } catch (std::exception& e) {
-        std::cerr << "Error:" << e.what();
-    }
 }
 
 void Buffer::consume(size_t len) {
     begin_ += len;
-    do_you_remember_consume_or_do_not_consume_ = true;
+    if (!do_you_remember_consume_or_do_not_consume_) {
+        do_you_remember_consume_or_do_not_consume_ = true;
+    } else {
+        throw std::runtime_error("duplicate enter consume");
+    }
 }
 
 void Buffer::do_not_consume(size_t nomeaning) {
-    do_you_remember_consume_or_do_not_consume_ = true;
+    if (!do_you_remember_consume_or_do_not_consume_) {
+        do_you_remember_consume_or_do_not_consume_ = true;
+    } else {
+        throw std::runtime_error("duplicate enter consume");
+    }
 }
 
 size_t Buffer::read_from_buffer(int fd, size_t len) throw(std::runtime_error) {
     invariant_check_wrap();
-    do_you_remember_consume_or_do_not_consume_ = false;
+    if (do_you_remember_consume_or_do_not_consume_) {
+        do_you_remember_consume_or_do_not_consume_ = false;
+    } else {
+        throw std::runtime_error("not consume and read rightly");
+    }
     char* readfrom = get_begin();
     int left = len;
     if (get_readable_bytes() >= len) {
@@ -203,7 +211,11 @@ size_t Buffer::read_from_buffer(int fd, size_t len) throw(std::runtime_error) {
 size_t Buffer::read_from_buffer(char* readto,
                                  size_t len) throw(std::runtime_error) {
     invariant_check_wrap();
-    do_you_remember_consume_or_do_not_consume_ = false;
+    if (do_you_remember_consume_or_do_not_consume_) {
+        do_you_remember_consume_or_do_not_consume_ = false;
+    } else {
+        throw std::runtime_error("not consume and read rightly");
+    }
     char* readfrom = get_begin();
     if (get_readable_bytes() >= len) {
         std::memcpy(readto, readfrom, len);

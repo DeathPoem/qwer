@@ -58,6 +58,7 @@ namespace my_http {
     TimerId TimerQueue::add_timer(TimeStamp when, CallBack&& cb) {
         LOG_INFO("here");
         if (timer_vec_.empty()) {
+            LOG_INFO("init timer and register it");
             init_timerfd_iodemultiplex();
         }
         timer_vec_.emplace_back(std::move(when), std::move(cb), cur_seqence_number_++);
@@ -113,6 +114,12 @@ namespace my_http {
 
     void TimerQueue::modify_timerfd_next_time() {
         LOG_INFO("here, modify_timerfd_next_time");
+        if (timerid_not_active.empty()) {
+            LOG_INFO("no timer not active, delete register and return");
+            assert(timer_vec_.empty());
+            ref_em_.remove_registered_event(Channel::get_readonly_event_flag(), up_ch_.get());
+            return;
+        }
         next_wake_time_ = timerid_not_active.top().alarm_time_;
         auto timer_fd = up_ch_->get_fd();
         struct itimerspec howlong;
@@ -135,7 +142,7 @@ namespace my_http {
     void TimerQueue::init_timerfd_iodemultiplex() {
         LOG_INFO("here");
         auto event = Channel::get_readonly_event_flag();
-        ref_em_.register_event(up_ch_.get(), 
+        ref_em_.register_event(Channel::get_readonly_event_flag(), up_ch_.get(),
                 bind(&TimerQueue::handle_timeout, this));
         next_wake_time_ = detail::create_big_enough_timestamp();
     }

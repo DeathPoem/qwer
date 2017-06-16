@@ -25,13 +25,10 @@ namespace my_http {
             virtual void ModChannel(Channel* p_ch) = 0;
             // init
             virtual void Init(int size = 9999) = 0;
-        protected :
-            weak_ptr<EventManager> event_manager_;
         private:
             /* data */
     };   
 
-    // TODO add error handling for this class
     class epollwrapper : public IODemultiplexerInterface {
         public:
             epollwrapper (EventManager* emp);
@@ -46,7 +43,6 @@ namespace my_http {
             int epoll_instance_fd_;
             const int MaxEvents = 1000;
             vector<struct epoll_event> epoll_vec_;
-            unordered_set<Channel*> active_channels_;
             EventManager* emp_;
     };
 

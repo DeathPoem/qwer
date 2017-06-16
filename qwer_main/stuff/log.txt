@@ -1,21 +1,337 @@
 ======== new log =======
 repare.
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:45, time:10:26:46, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:16, time:10:25:36, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:47, time:10:25:36, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:59, time:10:26:46, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:136, time:10:26:46, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:14, time:10:25:36, level:INFO <====> log:enter EventManager::register_event
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:25, time:10:25:36, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:52, time:10:26:46, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:107, time:10:26:46, level:INFO <====> log:here, after_add_new_timer
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:115, time:10:26:46, level:INFO <====> log:here, modify_timerfd_next_time
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:51, time:10:25:36, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:14, time:10:25:36, level:INFO <====> log:enter EventManager::register_event
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:25, time:10:25:36, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:47, time:10:25:36, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:59, time:10:26:46, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:107, time:10:26:46, level:INFO <====> log:here, after_add_new_timer
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:115, time:10:26:46, level:INFO <====> log:here, modify_timerfd_next_time
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:51, time:10:25:36, level:INFO <====> log:here
-filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:40, time:10:26:46, level:ERROR <====> log:timer vec is not empty! size =2
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:45, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:16, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:109, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:in epoll_and_accept
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:61, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:59, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:61, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:init timer and register it
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:143, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:36, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::register_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:24, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:52, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:108, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here, after_add_new_timer
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:116, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here, modify_timerfd_next_time
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:65, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:server 1 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21779.821 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:45, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:16, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:210, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:in connector epoll and connect
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:61, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:59, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:61, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:init timer and register it
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:143, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:36, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::register_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:24, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:52, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:108, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here, after_add_new_timer
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:116, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here, modify_timerfd_next_time
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:65, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:214, time:TimeStamp: 21779.821 seconds since the Epoch. 
+ level:INFO <====> log:client 1 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21779.825 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21779.825 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21779.825 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:69, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:this epoll_wait return zero
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 0; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:server 2 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21780.825 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:69, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:this epoll_wait return zero
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 0; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:214, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:client 2 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21780.825 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21780.825 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:69, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:this epoll_wait return zero
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 0; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:server 3 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21781.829 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:69, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:this epoll_wait return zero
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 0; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:214, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:client 3 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21781.829 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21781.829 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:71, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here, handle_timeout
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:71, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here, handle_timeout
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:76, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:this timer alert = TimeStamp: 21782.120 seconds since the Epoch. sec, now = TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:76, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:this timer alert = TimeStamp: 21782.120 seconds since the Epoch. sec, now = TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:183, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:in connector-handle epoll connected()
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:71, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:acceptor register accept epoll readable cb
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:36, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::register_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:24, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:96, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here, remove_dead_timestamp
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:98, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:top = TimeStamp: 21782.120 seconds since the Epoch., now = TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:198, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:when ::connect to nonblocking socket fd, would cause thisOperation now in progress, the socket would be ready in short
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:116, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here, modify_timerfd_next_time
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:118, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:no timer not active, delete register and return
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:43, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::remove_registered_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:55, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:196, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:connected and write to server!
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:server 4 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:36, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::register_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:24, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:96, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here, remove_dead_timestamp
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:74, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:in Acceptor::accept callback, accepted_count_ =0
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:98, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:top = TimeStamp: 21782.120 seconds since the Epoch., now = TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:116, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here, modify_timerfd_next_time
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:229, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:accept success
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/my_timer.cpp, line:118, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:no timer not active, delete register and return
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:43, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::remove_registered_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:36, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::register_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:55, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:24, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:36, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::register_event
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:214, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:client 4 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:24, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:42, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:here
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:server 5 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 3
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:234, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:237, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:read from client as 16
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:245, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:end read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:server 6 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:200, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:read from server
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:325, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:check =16
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:207, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:client close
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:232, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:one TCPConnection destruct
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:372, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:local TCPConnection close
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:214, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:client 5 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 3
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:234, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:312, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:try to read empty
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:243, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:read empty, why?
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:245, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:end read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:server 7 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 3
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:234, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:312, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:try to read empty
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:243, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:read empty, why?
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:245, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:end read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:server 8 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 3
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:234, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:312, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:try to read empty
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:243, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:read empty, why?
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:245, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:end read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:255, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:server 9 times loop_once
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:50, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:loop once
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:64, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter epollwrapper::loop_once loop timeout = 1000 milisec, now is TimeStamp: 21782.117 seconds since the Epoch.
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:87, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::add_active_event;event=IORead
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 1; event_call_back_map_.size() = 3
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:234, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:312, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:try to read empty
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:243, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:WARN <====> log:read empty, why?
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/test/4_tcp_test.cpp, line:245, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:DEBUG <====> log:end read from client
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:232, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:one TCPConnection destruct
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:48, time:TimeStamp: 21782.117 seconds since the Epoch. 
+ level:INFO <====> log:Acceptor destruct;tcp state=Listening
+
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/epollwrapper.cpp, line:69, time:TimeStamp: 21783.117 seconds since the Epoch. 
+ level:INFO <====> log:this epoll_wait return zero
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/event.cpp, line:94, time:TimeStamp: 21783.117 seconds since the Epoch. 
+ level:INFO <====> log:enter EventManager::handle_active_event : active_channels_.size() = 0; event_call_back_map_.size() = 1
+filename:/home/wangfrank/GitRootPath/qwer/qwer_main/src/lib/tcpserver.cpp, line:132, time:TimeStamp: 21783.117 seconds since the Epoch. 
+ level:INFO <====> log:Acceptor destruct

@@ -40,32 +40,42 @@ void clientfunc(int port, Ipv4Addr ipaddr) {
     ::memset(buff, '\0', 99);
     {
         std::unique_lock<std::mutex> lk(m);
-        LOG_DEBUG("block until accept!");
+        LOG_DEBUG("wait for state == 1");
         cv.wait(lk, []() { return state == 1; });
-        state += 1;
+        LOG_DEBUG("block until accept!");
+        state = 2;
         using namespace std::chrono_literals;
         while (check != 0) {
             std::this_thread::sleep_for(1s);
-            check = ::connect(socketfd, (sockaddr*)&peer, peerlen);
+            LOG_INFO("connect once");
+            check = ::connect(socketfd, (sockaddr *) &peer, peerlen);
             if (check != 0) {
                 LOG_INFO("connect , errno =", strerror((errno)));
             }
         }
         LOG_DEBUG("after connect!");
         ::sprintf(buf, "hello? world!");
-        check = ::write(socketfd, buf, strlen(buf));
-
-        SLOG_DEBUG("after client write! check =" << check << ",buflen="
-                                                 << ::strlen(buf));
-        assert(check == ::strlen(buf));
-        if (check < 0) {
-            NOTDONE();
-        }
     }
     cv.notify_one();
     {
         std::unique_lock<std::mutex> lk(m);
+        LOG_DEBUG("wait for state == 3");
         cv.wait(lk, []() { return state == 3; });
+        LOG_DEBUG("f");
+        check = ::write(socketfd, buf, strlen(buf));
+        SLOG_DEBUG("after client write! check =" << check << ",buflen="
+                                                 << ::strlen(buf));
+        assert(check == (int)::strlen(buf));
+        if (check < 0) {
+            NOTDONE();
+        }
+        state = 4;
+    }
+    cv.notify_one();
+    {
+        std::unique_lock<std::mutex> lk(m);
+        LOG_DEBUG("wait for state == 5");
+        cv.wait(lk, []() { return state == 5; });
         LOG_DEBUG("receive from server");
         check = ::read(socketfd, buff, ::strlen(buf));
         ::close(socketfd);
@@ -110,17 +120,21 @@ TEST(test_case_4, test_raw_tcp) {
     unsigned int peerlen = sizeof(peer);
     int new_fd = -1;
     for (int i : {1}) {
-        LOG_DEBUG("f");
         {
             std::lock_guard<std::mutex> lk(m);
-            state += 1;
-            // not 100 percent thread safe
+            LOG_DEBUG("f");
+            state = 1;
         }
-        new_fd = ::accept(socketfd, &peer, &peerlen);
+        cv.notify_one();
         {
-            std::lock_guard<std::mutex> lk(m);
-            SLOG_DEBUG("after accept -" << i
-                       << "state =" << state);
+            std::unique_lock<std::mutex> lk(m);
+            LOG_DEBUG("wait for state == 2");
+            cv.wait(lk, []() { return state == 2;});
+            LOG_DEBUG("accept invoked!");
+            new_fd = ::accept(socketfd, &peer, &peerlen);
+            SLOG_DEBUG("after accept " << i
+                                        << " state =" << state);
+            state = 3;
         }
         if (new_fd < 0) {
             NOTDONE();
@@ -128,11 +142,13 @@ TEST(test_case_4, test_raw_tcp) {
         cv.notify_one();
         {
             std::unique_lock<std::mutex> lk(m);
-            cv.wait(lk, []() { return state == 2; });
-            state += 1;
+            LOG_DEBUG("wait for state == 4");
+            cv.wait(lk, []() { return state == 4; });
+            state = 5;
             echo(new_fd);
             LOG_DEBUG("after echo");
         }
+        cv.notify_one();
     }
     client_thread.join();
     ::close(socketfd);
@@ -144,68 +160,112 @@ struct TCPConnectionHolder {
 
 struct XMsgResponser {
     void do_it(Buffer& rb, Buffer& wb) {
-        char readto[rb.get_readable_bytes()];
+        char readto[4000];
+        memset(readto, 0, sizeof readto);
+        assert(rb.get_readable_bytes() < 4000);
+        assert(rb.get_readable_bytes() > 0);
         rb.read_from_buffer(readto, rb.get_readable_bytes());
         auto consume_size = strlen(readto);
         rb.consume(consume_size);
-        char* result = readto;
+        char result[4000];
+        memset(result, 0, sizeof result);
+        memcpy(result, readto, strlen(readto));
         wb.write_to_buffer(result, strlen(result));
     }
     void do_it(char* msg, char* after) { ::memcpy(msg, after, strlen(msg)); }
-    void client_do_it(Buffer& rb, Buffer& wb) {}
+    void client_do_it(Buffer& rb, Buffer& wb) {
+        char writefrom[4000];
+        sprintf(writefrom, "this is client, hello?");
+        wb.write_to_buffer(writefrom, strlen(writefrom));
+    }
 };
+
+void client_thread_function() {
+    EventManagerWrapper emw;
+    Ipv4Addr listen_ip(Ipv4Addr::host2ip_str("localhost"), 3876);
+    Ipv4Addr clientip(Ipv4Addr::host2ip_str("localhost"), 86211);
+    TCPConnectionHolder clientholder;
+    XMsgResponser msg_responser;
+    Connector my_connector(&emw);
+    string outer;
+    my_connector.set_local_addr(clientip)
+            .set_connect_to_addr(listen_ip)
+            .set_connect_callback([&outer, &clientholder](
+                    shared_ptr<TCPConnection> shared_p_tc) {
+                clientholder.shared_p_tc_vec_.push_back(shared_p_tc);
+                LOG_DEBUG("connected and write to server!");
+                shared_p_tc->write_by_string("fucking awesome!");
+                shared_p_tc
+                        ->set_normal_readable_callback([&outer](TCPConnection& this_con) {
+                            LOG_DEBUG("read from server");
+                            outer = this_con.read_by_string();
+                            this_con.get_rb_ref().consume(outer.size());
+                            this_con.local_close();
+                        })
+                        .set_local_close_callback(
+                                [&clientholder](TCPConnection& this_con) {
+                                    LOG_DEBUG("client close");
+                                    clientholder.shared_p_tc_vec_.clear();  // shared_ptr would destruct
+                                })
+                        .epoll_and_conmunicate();
+            })
+            .epoll_and_connect();
+    for (int c1 : {1, 2, 3, 4, 5}) {
+        SLOG_INFO("client " << c1 << " times loop_once");
+        emw.loop_once(1 * 1000);
+    }
+    EXPECT_EQ(outer, "fucking awesome!");
+}
+
+void server_thread_function() {
+    EventManagerWrapper emw;
+    Acceptor acceptor(&emw);
+    Ipv4Addr listen_ip(Ipv4Addr::host2ip_str("localhost"), 3876);
+    TCPConnectionHolder holder;
+    XMsgResponser msg_responser;
+    acceptor.set_listen_addr(listen_ip)
+            .set_accept_readable_callback([&holder, &msg_responser](
+                    shared_ptr<TCPConnection> shared_p_tc) {
+                LOG_DEBUG("accept success");
+                holder.shared_p_tc_vec_.push_back(shared_p_tc);
+                shared_p_tc
+                        ->set_normal_readable_callback(
+                                [&msg_responser](TCPConnection& this_con) {
+                                    LOG_DEBUG("read from client");
+                                    size_t check = this_con.try_to_read();
+                                    if (check >= 1) {
+                                        LOG_DEBUG("read from client as %d", check);
+                                        auto& rbuffer = this_con.get_rb_ref();
+                                        auto& wbuffer = this_con.get_wb_ref();
+                                        msg_responser.do_it(rbuffer, wbuffer);
+                                        this_con.try_to_write();
+                                    } else {
+                                        LOG_WARN("read empty, why?");
+                                    }
+                                    LOG_DEBUG("end read from client");
+                                })
+                        .set_peer_close_callback(
+                                [](TCPConnection& this_con) {
+                                    LOG_DEBUG("client down");
+                                })
+                        .epoll_and_conmunicate();
+            })
+            .epoll_and_accept();
+    for (int c1 : {1, 2, 3, 4, 5, 6, 7, 8, 9}) {
+        SLOG_INFO("server " << c1 << " times loop_once");
+        emw.loop_once(1 * 1000);
+    }
+}
+
 
 TEST(test_case_4, test_tcp_acceptor_connector) {
     LOG_SET_FILE("");
     LOG_SET_LEVEL("INFO");
-    EventManagerWrapper emw;
-    Acceptor acceptor(&emw);
-    Ipv4Addr listen_ip(Ipv4Addr::host2ip_str("localhost"), 9876);
-    TCPConnectionHolder holder;
-    TCPConnectionHolder clientholder;
-    size_t app_size = 100;
-    XMsgResponser msg_responser;
-    Ipv4Addr clientip(Ipv4Addr::host2ip_str("localhost"), 87211);
-    Connector my_connector(&emw);
-    acceptor.set_listen_addr(listen_ip)
-        .set_accept_readable_callback([&holder, &app_size, &msg_responser](
-            shared_ptr<TCPConnection> shared_p_tc) {
-            holder.shared_p_tc_vec_.push_back(shared_p_tc);
-            shared_p_tc
-                ->set_normal_readable_callback(
-                    [&app_size, &msg_responser](TCPConnection& this_con) {
-                        auto check = this_con.try_to_read(app_size);
-                        if (check >= app_size) {
-                            auto& rbuffer = this_con.get_rb_ref();
-                            auto& wbuffer = this_con.get_wb_ref();
-                            msg_responser.do_it(rbuffer, wbuffer);
-                            this_con.try_to_write();
-                        } else {
-                            NOTDONE();
-                        }
-                    })
-                .set_peer_close_readable_callback(
-                    [](TCPConnection& this_con) { LOG_DEBUG("peer down"); })
-                .epoll_and_conmunicate();
-        })
-        .epoll_and_accept();
 
-    my_connector.set_local_addr(clientip)
-        .set_connect_to_addr(listen_ip)
-        .set_connect_callback([&clientholder](
-            shared_ptr<TCPConnection> shared_p_tc) {
-            clientholder.shared_p_tc_vec_.push_back(shared_p_tc);
-            LOG_INFO("connected !");
-            shared_p_tc->write_by_string("fucking awesome!");
-            shared_p_tc
-                ->set_normal_readable_callback([](TCPConnection& this_con) {
-                })
-                .set_peer_close_readable_callback(
-                    [](TCPConnection& this_con) { LOG_DEBUG("peer down"); })
-                .epoll_and_conmunicate();
-        })
-        .epoll_and_connect();
-    //emw.loop_once(5 * 1000);
+    auto server_thread = std::thread(server_thread_function);
+    auto client_thread = std::thread(client_thread_function);
+    client_thread.join();
+    server_thread.join();
 }
 
 int main(int argc, char** argv) {

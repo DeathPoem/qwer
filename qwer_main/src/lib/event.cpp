@@ -2,44 +2,58 @@
 
 namespace my_http {
 
+    std::ostream& operator<<(std::ostream& os, EventEnum e) {
+        if (e == EventEnum::IORead) {
+            os << "IORead";
+        } else if (e == EventEnum::IOWrite) {
+            os << "IOWrite";
+        } else if (e == EventEnum::PeerShutDown) {
+            os << "PeerShutDown";
+        } else if (e == EventEnum::IOReadET) {
+            os << "IOReadET";
+        } else {
+            NOTDONE();
+        }
+    }
+
     EventManager::EventManager() : io_demultiplexer_(new epollwrapper(this)),
     exit_(false),
-    my_timer_queue_(new TimerQueue(std::ref(*this))) {
+    my_timer_queue_(new TimerQueue(*this)) {
         io_demultiplexer_->Init();
     }
 
     EventManager::~EventManager() { }
 
+    /*
     void EventManager::register_event(Channel* p_ch, CallBack&& cb) {
         LOG_INFO("enter EventManager::register_event");
         event_call_back_map_[make_pair(uint2enum(p_ch->get_events()), p_ch)] = std::move(cb);
         io_demultiplexer_->AddChannel(p_ch);
     }
+     */
 
     void EventManager::register_event(uint32_t event, Channel* p_ch, CallBack&& cb) {
         LOG_INFO("enter EventManager::register_event");
+        p_ch->set_events(event);
         event_call_back_map_[make_pair(uint2enum(event), p_ch)] = std::move(cb);
         io_demultiplexer_->AddChannel(p_ch);
     }
 
-    void remove_registered_event(uint32_t event, Channel* p_ch) {
-
+    void EventManager::remove_registered_event(uint32_t event, Channel* p_ch) {
+        LOG_INFO("enter EventManager::remove_registered_event");
+        io_demultiplexer_->DelChannel(p_ch);
+        auto found = event_call_back_map_.find(make_pair(uint2enum(event), p_ch));
+        event_call_back_map_.erase(found);
     }
     
-    void EventManager::handle_event(EventEnum para_enum, Channel* p_ch) {
-        LOG_INFO("enter EventManager::handle_event");
-        LOG_DEBUG("map size= %d", event_call_back_map_.size());
-        auto callback = event_call_back_map_[make_pair(para_enum, p_ch)];
-        callback();
-    }
-
     void EventManager::loop_once(time_ms_t timeout) {
-        LOG_INFO("here");
+        LOG_INFO("loop once");
         assert(io_demultiplexer_ != nullptr);
         io_demultiplexer_->loop_once(timeout);
     }
 
     TimerId EventManager::run_at(time_ms_t para_t, CallBack&& cb) {
+        LOG_INFO("run at");
         return run_after(para_t, std::move(cb));
     }
 
@@ -51,8 +65,6 @@ namespace my_http {
         LOG_INFO("here");
         return ret;
     }
-
-    void check_state_of_timerid(TimerId tid) {}
 
     void EventManager::exit() {
         exit_ = true;
@@ -72,7 +84,7 @@ namespace my_http {
     void EventManager::start_up() {}
 
     void EventManager::add_active_event(EventEnum para_enum, Channel* p_ch) {
-        LOG_INFO("enter EventManager::add_active_event");
+        SLOG_INFO("enter EventManager::add_active_event" << ";event=" << para_enum);
         active_channels_.push_back(make_pair(para_enum, p_ch));
     }
 
@@ -80,13 +92,23 @@ namespace my_http {
         LOG_INFO("enter EventManager::handle_active_event : active_channels_.size() = %d; event_call_back_map_.size() = %d", 
                 active_channels_.size(), 
                 event_call_back_map_.size());
-        for (auto va : active_channels_) {
+        for (auto& va : active_channels_) {
             auto found = event_call_back_map_.find(va);
             if (found != event_call_back_map_.end()) {
-                std::get<1>(*found)();
+                get<1>(*found)();
             } else {
-                // TODO : not found register_event
-                NOTDONE();
+                // handle this : IOReadET would return IORead when epoll_wait
+                if (va.first == EventEnum::IORead) {
+                    va.first = EventEnum ::IOReadET;
+                    auto found = event_call_back_map_.find(va);
+                    if (found != event_call_back_map_.end()) {
+                        get<1>(*found);
+                    } else {
+                        NOTDONE();
+                    }
+                } else {
+                    NOTDONE();
+                }
             }
         }
         active_channels_.clear();
@@ -108,7 +130,6 @@ namespace my_http {
 
     TimerId EventManagerWrapper::run_at(time_ms_t para_t, CallBack&& cb) {
         auto ret = pimpl_->run_at(para_t, std::move(cb));
-        LOG_INFO("here");
         return ret;
     }
 
@@ -121,8 +142,8 @@ namespace my_http {
         pimpl_->loop_once(timeout);
     }
 
-    void EventManagerWrapper::register_event(Channel* p_ch, CallBack&& cb) {
-        pimpl_->register_event(p_ch, std::move(cb));
+    void EventManagerWrapper::register_event(uint32_t event, Channel* p_ch, CallBack&& cb) {
+        pimpl_->register_event(event, p_ch, std::move(cb));
     }
 
     uint32_t enum2uint(EventEnum eventenum) {
@@ -133,7 +154,9 @@ namespace my_http {
         } else if (eventenum == EventEnum::IOWrite) {
             event = EPOLLOUT;
         } else if (eventenum == EventEnum::PeerShutDown) {
-            event = EPOLLRDHUP;
+            event = EPOLLHUP;
+        } else if (eventenum == EventEnum::IOReadET) {
+            event = EPOLLIN | EPOLLET;
         } else {
             NOTDONE();
         }
@@ -146,8 +169,10 @@ namespace my_http {
             para_enum = EventEnum::IORead;
         } else if (event == EPOLLOUT) {
             para_enum = EventEnum::IOWrite;
-        } else if (event == EPOLLRDHUP) {
+        } else if (event == EPOLLHUP) {
             para_enum = EventEnum::PeerShutDown;
+        } else if (event == EPOLLIN | EPOLLET) {
+            para_enum = EventEnum ::IOReadET;
         } else {
             NOTDONE();
         }

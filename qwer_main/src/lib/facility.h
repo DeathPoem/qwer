@@ -19,6 +19,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <map>
+#include <thread>
+#include <mutex>
 #include <unordered_map>
 #include <iostream>
 #include <unordered_set>
@@ -47,22 +49,25 @@ namespace my_http {
     }
 
 #define log_if_level(level, ...) \
-    if (static_cast<uint32_t>(level) <= static_cast<uint32_t>(Logger::get_logger().get_log_level())) { \
-        Logger::get_logger().log_v(static_cast<uint32_t>(level), __FILE__, std::to_string(__LINE__).c_str(), __TIME__, __VA_ARGS__); \
+    if (static_cast<uint32_t>(level) - 1 < static_cast<uint32_t>(Logger::get_logger().get_log_level())) { \
+        Logger::get_logger().log_v(static_cast<uint32_t>(level), __FILE__, std::to_string(__LINE__).c_str(), get_time_of_now().c_str(), __VA_ARGS__); \
     }
 
 #define LOG_ERROR(...) log_if_level(Logger::LogLevel::ERROR, __VA_ARGS__)
 #define LOG_WARN(...) log_if_level(Logger::LogLevel::WARN, __VA_ARGS__)
 #define LOG_DEBUG(...) log_if_level(Logger::LogLevel::DEBUG, __VA_ARGS__)
 #define LOG_INFO(...) log_if_level(Logger::LogLevel::INFO, __VA_ARGS__)
-#define LOG_SET_FILE(file) Logger::get_logger().repare(file)
+#define LOG_SET_FILE(file) Logger::get_logger().repare(file).set_buffer_active(false)
+#define LOG_SET_FILE_P(file, flag) Logger::get_logger().repare(file).set_buffer_active(flag)
 #define LOG_SET_LEVEL(level) Logger::get_logger().set_log_level(level)
 #define ABORT(...) \
     do {\
+        Logger::get_logger().set_buffer_active(false);\
         log_if_level(Logger::LogLevel::ERROR, __VA_ARGS__);\
-        std::abort();\
+        Logger::get_logger().set_buffer_active(true);\
+        throw std::runtime_error("my abort");\
     } while (0)
-
+ // by doing so, I can get error log even a unhandled signal is rised
 #define NOTDONE() ABORT("not implement yet!")
 #define SLOG_ERROR(msg) \
     do {\
@@ -143,7 +148,11 @@ using time_ms_t = int;
     // return log file fd
     int DeployLogFile(const char* file);
 
-    void WriteToFile(int fd, const char* format, ...); 
+    void WriteToFile(int fd, const char* format, ...);
+
+    void set_nonblock(int fd);
+
+    string get_time_of_now();
 
     class noncopyable {
         public :
@@ -152,14 +161,9 @@ using time_ms_t = int;
         noncopyable& operator==(const noncopyable& c) = delete;
     };
 
-    // TODO implement a LogStream to use support iostream like << for logging
-    struct LogStream {
-
-    };
-
     class Logger : private noncopyable {
         public :
-            enum class LogLevel {ERROR = 0, WARN = 1, DEBUG = 2, INFO = 3};
+            enum class LogLevel {ERROR = 1, WARN = 2, DEBUG = 3, INFO = 4};
             Logger();
             ~Logger();
             static Logger& get_logger();
@@ -168,15 +172,22 @@ using time_ms_t = int;
             int log(const char* format, ...);
             int log_v(int level, const char* filename, const char* line, const char* time, const char* format, ...);
             LogLevel get_log_level();
+            void set_buffer_active(bool ac);
         private :
-            string filename_;
+            void change_or_quit();
+            void buffer_repare();
+            void force_write();
             int fd_;
+            bool buffer_active_ = false;
+            const size_t x_size_ = 8192;
+            char* x_buffer_ = nullptr;
+            size_t  x_buf_sign_ = 0;
             LogLevel cur_level_ = LogLevel::WARN;
             const unordered_map<int, string> level_m_ = {
-                {0, "ERROR"},
-                {1, "WARN"},
-                {2, "DEBUG"},
-                {3, "INFO"}
+                {1, "ERROR"},
+                {2, "WARN"},
+                {3, "DEBUG"},
+                {4, "INFO"}
             };
     };
 
@@ -187,6 +198,8 @@ using time_ms_t = int;
             Channel (int fd);
             virtual ~Channel ();
             int get_fd();
+            void shutdown();
+            bool is_shutdown();
             void close();
             bool is_closed();
             //struct epoll_event* get_epoll_event_p(); this is not good, because if you return a heap pointer, the caller would be responsible to delete it.
@@ -196,12 +209,15 @@ using time_ms_t = int;
             static uint32_t get_writeonly_event_flag();
             static uint32_t get_wr_event_flag();
             static uint32_t get_no_wr_event_flag();
+            static uint32_t get_edge_trigger_flag();
+            static uint32_t get_peer_shutdown_flag();
             void set_events(uint32_t para_event);
         private:
             int fd_;
             enum ChannelType ct_;
             uint32_t event_;
-            bool is_closed_;
+            bool is_closed_ = false;
+            bool is_shutdown_ = false;
             /* data */
     };
 
