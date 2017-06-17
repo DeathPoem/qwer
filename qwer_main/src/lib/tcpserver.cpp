@@ -379,8 +379,7 @@ void TCPConnection::peer_close() {
     LOG_INFO("peer close");
 }
 
-TCPServer::TCPServer(EventManagerWrapper* emwp, MsgResponser* msg_responser,
-                     Ipv4Addr listen_ip, uint32_t maxtcpcon)
+TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip, uint32_t maxtcpcon)
     : emp_(emwp->get_pimpl()),
       listen_ip_(listen_ip),
       maxtcpcon_(maxtcpcon),
@@ -392,11 +391,13 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, MsgResponser* msg_responser,
                 tcpcon_map_[seqno_] = shared_p_tc;
                 auto seqno_tmp = seqno_++;
                 if (seqno_cb_ == nullptr) {
-                    ABORT("did you remember to set callback?");
+                    //may happen
+                } else {
+                    seqno_cb_(seqno_tmp);
                 }
-                seqno_cb_(seqno_tmp);
                 tcpcon_map_[seqno_tmp]->set_seqno_of_server(seqno_tmp);
                 if (after_connected_ == nullptr) {
+                    //may happen
                 } else {
                     after_connected_(*tcpcon_map_[seqno_tmp]);
                 }
@@ -481,8 +482,7 @@ shared_ptr<TCPConnection>& TCPServer::get_shared_tcpcon_ref_by_seqno(
 
 TCPSTATE TCPServer::get_state() { NOTDONE(); }
 
-TCPClient::TCPClient(EventManagerWrapper* emwp, MsgResponser* msg_responser,
-                     Ipv4Addr connect_ip, Ipv4Addr local_ip)
+TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip, Ipv4Addr local_ip)
     : emp_(emwp->get_pimpl()),
       local_ip_(local_ip),
       connect_ip_(connect_ip),
@@ -500,6 +500,7 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, MsgResponser* msg_responser,
             auto seqno_tmp = generate_seqno_of_this_con();
             seqno_cb_(seqno_tmp);
             if (after_connected_ == nullptr) {
+                //may happen
             } else {
                 after_connected_(*tcpcon_);
             }

@@ -144,12 +144,15 @@ private:
 
 class TCPServer : private noncopyable {
 public:
-    TCPServer(EventManagerWrapper* emwp, MsgResponser* msg_responser,
-              Ipv4Addr listen_ip, uint32_t maxtcpcon = 800);
+    TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip, uint32_t maxtcpcon = 800);
     virtual ~TCPServer();
+    // this interface is not essential
     TCPServer& set_tcpcon_after_connected_callback(TCPCallBack&& cb);
-    TCPServer& set_accept_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb); // you should store seqno or get_shared_tcpcon_ref_by_seqno and get peer name and register_cb_for_con_of_seqno in msg_responser_ in this cb.
+    // using this API, you should store seqno or get_shared_tcpcon_ref_by_seqno and get peer name and register_cb_for_con_of_seqno in msg_responser_.
+    TCPServer& set_accept_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb); 
+    // use this to get read size
     TCPServer& set_tcpcon_read_size_callback(SizeCallBack&& cb);
+    // provide a interface to let outside code to respond
     TCPServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
     shared_ptr<TCPConnection>& get_shared_tcpcon_ref_by_seqno(uint32_t seqno);
     TCPSTATE get_state();
@@ -169,11 +172,10 @@ private:
 
 class TCPClient : private noncopyable {
 public:
-    TCPClient(EventManagerWrapper* emwp, MsgResponser* msg_responser,
-            Ipv4Addr connect_ip, Ipv4Addr local_ip);
+    TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip, Ipv4Addr local_ip);
     virtual ~TCPClient();
     TCPClient& set_tcpcon_after_connected_callback(TCPCallBack&& cb);
-    TCPClient& set_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb); // you should store seqno or get_shared_tcpcon_ref_by_seqno and get peer name and register_cb_for_con_of_seqno in msg_responser_ in this cb.
+    TCPClient& set_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb);
     TCPClient& set_tcpcon_read_size_callback(SizeCallBack&& cb);
     TCPClient& set_msg_responser_callback(MsgResponserCallBack&& cb);
     shared_ptr<TCPConnection>& get_shared_tcpcon_ref();

@@ -101,13 +101,12 @@ TEST(test_case_3, test_event_loop_timerfd) {
     string outer;
     int timerfd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
     Channel ch_1(timerfd);
-    ch_1.set_events(Channel::get_readonly_event_flag());
     EventManagerWrapper emw;
     auto cb = [&outer, &emw](){ 
         outer += "fucking awesome!";
         emw.exit();
     };
-    emw.register_event(&ch_1, std::move(cb));
+    emw.register_event(Channel::get_readonly_event_flag(), &ch_1, std::move(cb));
 
     struct itimerspec howlong;
     memset(&howlong, 0, sizeof(howlong));

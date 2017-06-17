@@ -41,6 +41,8 @@
 
 namespace my_http {
 
+inline std::string get_time_of_now();
+
 #define exit_if(r, ...) \
     if (r) {\
         printf(__VA_ARGS__);\
@@ -50,14 +52,14 @@ namespace my_http {
 
 #define log_if_level(level, ...) \
     if (static_cast<uint32_t>(level) - 1 < static_cast<uint32_t>(Logger::get_logger().get_log_level())) { \
-        Logger::get_logger().log_v(static_cast<uint32_t>(level), __FILE__, std::to_string(__LINE__).c_str(), get_time_of_now().c_str(), __VA_ARGS__); \
+        Logger::get_logger().log_v(static_cast<uint32_t>(level), __FILE__, std::to_string(__LINE__).c_str(), my_http::get_time_of_now().c_str(), __VA_ARGS__); \
     }
 
 #define LOG_ERROR(...) log_if_level(Logger::LogLevel::ERROR, __VA_ARGS__)
 #define LOG_WARN(...) log_if_level(Logger::LogLevel::WARN, __VA_ARGS__)
 #define LOG_DEBUG(...) log_if_level(Logger::LogLevel::DEBUG, __VA_ARGS__)
 #define LOG_INFO(...) log_if_level(Logger::LogLevel::INFO, __VA_ARGS__)
-#define LOG_SET_FILE(file) Logger::get_logger().repare(file).set_buffer_active(false)
+#define LOG_SET_FILE(file) Logger::get_logger().repare(file).set_buffer_active(true)
 #define LOG_SET_FILE_P(file, flag) Logger::get_logger().repare(file).set_buffer_active(flag)
 #define LOG_SET_LEVEL(level) Logger::get_logger().set_log_level(level)
 #define ABORT(...) \
@@ -152,8 +154,6 @@ using time_ms_t = int;
 
     void set_nonblock(int fd);
 
-    string get_time_of_now();
-
     class noncopyable {
         public :
         noncopyable() {}
@@ -179,7 +179,7 @@ using time_ms_t = int;
             void force_write();
             int fd_;
             bool buffer_active_ = false;
-            const size_t x_size_ = 8192;
+            const size_t x_size_ = 204800;
             char* x_buffer_ = nullptr;
             size_t  x_buf_sign_ = 0;
             LogLevel cur_level_ = LogLevel::WARN;

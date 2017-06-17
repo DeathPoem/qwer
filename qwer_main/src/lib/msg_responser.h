@@ -7,14 +7,23 @@ namespace my_http {
 
 using MsgResponserDoCallBack = std::function<void(Buffer&, Buffer&)>;
 
-class MsgResponser {
+class MsgResponserInterface {
 public:
-    MsgResponser();
-    virtual ~MsgResponser();
-    size_t get_require_size();
-    void set_mini_require_size(size_t mini_size);
-    void do_it_for_con_of_seqno(uint32_t seqno, Buffer& rb, Buffer& wb);
-    void register_cb_for_con_of_seqno(uint32_t seqno, MsgResponserDoCallBack&& cb);
+    MsgResponserInterface();
+    virtual ~MsgResponserInterface();
+    virtual size_t get_require_size() = 0;
+    virtual void do_it_for_con_of_seqno(uint32_t seqno, Buffer& rb, Buffer& wb) = 0;
+    virtual void register_cb_for_con_of_seqno(uint32_t seqno, MsgResponserDoCallBack&& cb) = 0;
+
+};
+
+class EchoMsgResponser : public MsgResponserInterface {
+    public:
+        EchoMsgResponser();
+        virtual ~EchoMsgResponser();
+        size_t get_require_size() override;
+        void do_it_for_con_of_seqno(uint32_t seqno, Buffer& rb, Buffer& wb) override;
+        void register_cb_for_con_of_seqno(uint32_t seqno, MsgResponserDoCallBack&& cb) override;
 
 private:
     size_t mini_size_ = 1;

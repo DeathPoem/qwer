@@ -268,6 +268,28 @@ TEST(test_case_4, test_tcp_acceptor_connector) {
     server_thread.join();
 }
 
+void x_server_thread_function() {
+    EventManagerWrapper emw;
+    EchoMsgResponser msg_responser;
+    Ipv4Addr listen_ip(Ipv4Addr::host2ip_str("localhost"), 53876);
+    TCPServer tcpserver(&emw, listen_ip);
+    tcpserver.set_accept_get_tcpcon_seqno_callback(
+}
+
+void x_client_thread_function() {
+
+}
+
+TEST(test_case_4, test_tcp_server_client) {
+    LOG_SET_FILE("");
+    LOG_SET_LEVEL("INFO");
+    
+    auto server_thread = std::thread(x_server_thread_function);
+    auto client_thread = std::thread(x_client_thread_function);
+    client_thread.join();
+    server_thread.join();
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

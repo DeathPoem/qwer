@@ -142,7 +142,7 @@ namespace my_http {
         return os << rhs.tostring();
     }
 
-    string get_time_of_now() {
+    inline string get_time_of_now() {
         return TimeStamp().init_stamp_of_now().tostring();
     }
 
