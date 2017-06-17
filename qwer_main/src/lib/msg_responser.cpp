@@ -1,8 +1,12 @@
 #include "msg_responser.h"
 
 namespace my_http {
-    
-    EchoMsgResponser::EchoMsgResponser() {
+
+    MsgResponserInterface::MsgResponserInterface(){ }
+
+    MsgResponserInterface::~MsgResponserInterface(){}
+
+    EchoMsgResponser::EchoMsgResponser(){
         echo_do_it = [](Buffer& rb, Buffer wb) {
             char readto[4000];
             if (rb.get_readable_bytes() >= 4000) {
@@ -13,10 +17,10 @@ namespace my_http {
             rb.consume(consume_size);
             char result[4000];
             wb.write_to_buffer(result, consume_size);
-        };  // this would be invoked if no cb for particular seqno
+        };
     }
 
-    EchoMsgResponser::~EchoMsgResponser() {}
+    EchoMsgResponser::~EchoMsgResponser(){}
 
     size_t EchoMsgResponser::get_require_size() {
         return mini_size_;

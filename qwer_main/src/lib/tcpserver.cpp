@@ -43,9 +43,10 @@ Acceptor::Acceptor(EventManagerWrapper* emwp)
 }
 
 Acceptor::~Acceptor() {
-    //TODO
+    // TODO
     // disregister
-    SLOG_INFO("Acceptor destruct" << ";tcp state=" << tcpstate_);
+    SLOG_INFO("Acceptor destruct"
+              << ";tcp state=" << tcpstate_);
 }
 
 Acceptor& Acceptor::set_listen_addr(Ipv4Addr addr) {
@@ -60,7 +61,7 @@ Acceptor& Acceptor::set_accept_readable_callback(
     return *this;
 }
 
-void Acceptor::listen_it_and_accept(){
+void Acceptor::listen_it_and_accept() {
     listened_ip_.ip_bind_socketfd(listened_socket_->get_fd());
     auto check = ::listen(listened_socket_->get_fd(), SOMAXCONN);
     if (check != 0) {
@@ -69,11 +70,13 @@ void Acceptor::listen_it_and_accept(){
     tcpstate_ = TCPSTATE::Listening;
     if (movecb_ != nullptr) {
         LOG_INFO("acceptor register accept epoll readable cb");
-        emp_->register_event(Channel::get_readonly_event_flag(), listened_socket_.get(), [this]() {
-            SLOG_INFO("in Acceptor::accept callback, accepted_count_ ="
-                              << accepted_count_++);
-            handle_epoll_readable();
-        });
+        emp_->register_event(
+            Channel::get_readonly_event_flag(), listened_socket_.get(),
+            [this]() {
+                SLOG_INFO("in Acceptor::accept callback, accepted_count_ ="
+                          << accepted_count_++);
+                handle_epoll_readable();
+            });
     } else {
         NOTDONE();
     }
@@ -92,8 +95,7 @@ void Acceptor::handle_epoll_readable() {
             // no more
             break;
         }
-        auto check = ::getpeername(new_fd,
-                                   peer.get_p_socketaddr(), &len);
+        auto check = ::getpeername(new_fd, peer.get_p_socketaddr(), &len);
         if (check != 0) {
             SLOG_ERROR("errno = " << strerror(errno));
             NOTDONE();
@@ -127,7 +129,7 @@ Connector::Connector(EventManagerWrapper* emwp)
 }
 
 Connector::~Connector() {
-    //TODO
+    // TODO
     // disregister
     LOG_INFO("Acceptor destruct");
 }
@@ -195,10 +197,12 @@ void Connector::try_connect_once() {
     int check = ::connect(to_connect_socket_->get_fd(),
                           to_connect_ip_.get_p_socketaddr(), len);
     if (check != 0 && errno == 115) {
-        SLOG_WARN("when ::connect to nonblocking socket fd, would cause this" << strerror(errno) << ", the socket would be ready in short");
+        SLOG_WARN("when ::connect to nonblocking socket fd, would cause this"
+                  << strerror(errno) << ", the socket would be ready in short");
         tcpstate_ = TCPSTATE::Connected;
     } else if (check != 0 && errno != 115) {
-        SLOG_WARN("fail to connect, try to connect more" << ";errorstr is " << strerror(errno) << ";errno=" << errno);
+        SLOG_WARN("fail to connect, try to connect more"
+                  << ";errorstr is " << strerror(errno) << ";errno=" << errno);
     } else if (check == 0) {
         tcpstate_ = TCPSTATE::Connected;
     } else {
@@ -227,7 +231,7 @@ TCPConnection::TCPConnection(EventManager* emp, unique_ptr<Channel> socket_ch,
 }
 
 TCPConnection::~TCPConnection() {
-    //TODO
+    // TODO
     // disregister
     LOG_INFO("one TCPConnection destruct");
 }
@@ -252,32 +256,32 @@ TCPConnection& TCPConnection::set_local_close_callback(TCPCallBack&& cb) {
     return *this;
 }
 
-TCPSTATE TCPConnection::get_state() {
-    return tcpstate_;
-}
+TCPSTATE TCPConnection::get_state() { return tcpstate_; }
 
 BigFileSendCallBack TCPConnection::get_bigfilesendcb() {
-    return [](string s) {
-        LOG_ERROR("not done yet");
-    };
+    return [](string s) { LOG_ERROR("not done yet"); };
 }
 
 TCPConnection& TCPConnection::set_idle_callback() { return *this; }
 
 void TCPConnection::epoll_and_conmunicate() {
     if (nread_cb_ != nullptr) {
-        //emp_->register_event(Channel::get_readonly_event_flag() | Channel::get_edge_trigger_flag(), unique_p_ch_.get(),
+        // emp_->register_event(Channel::get_readonly_event_flag() |
+        // Channel::get_edge_trigger_flag(), unique_p_ch_.get(),
         // FIXME this code won't detect socket read?
         // FIXME the following code would lead to empty read socket
-        emp_->register_event(Channel::get_readonly_event_flag(), unique_p_ch_.get(),
+        emp_->register_event(Channel::get_readonly_event_flag(),
+                             unique_p_ch_.get(),
                              [this]() { handle_epoll_readable(); });
     }
     if (nwrite_cb_ != nullptr) {
-        emp_->register_event(Channel::get_writeonly_event_flag(), unique_p_ch_.get(),
+        emp_->register_event(Channel::get_writeonly_event_flag(),
+                             unique_p_ch_.get(),
                              [this]() { handle_epoll_writable(); });
     }
     if (close_cb_ != nullptr) {
-        emp_->register_event(Channel::get_peer_shutdown_flag(), unique_p_ch_.get(),
+        emp_->register_event(Channel::get_peer_shutdown_flag(),
+                             unique_p_ch_.get(),
                              [this]() { handle_epoll_peer_shut_down(); });
     }
 }
@@ -308,7 +312,9 @@ size_t TCPConnection::try_to_read(size_t len) {
 size_t TCPConnection::try_to_read() {
     int len;
     int check = ::ioctl(unique_p_ch_->get_fd(), FIONREAD, &len);
-    if (check != 0) {NOTDONE();}
+    if (check != 0) {
+        NOTDONE();
+    }
     if (len == 0) {
         LOG_WARN("try to read empty");
         return 0;
@@ -324,7 +330,8 @@ string TCPConnection::read_by_string() {
     int check = read_sock_to_this_.read_from_buffer(str_c, nread);
     if (nread == check) {
         SLOG_INFO("check =" << check);
-        //read_sock_to_this_.consume(nread);        this consume should be done in app
+        // read_sock_to_this_.consume(nread);        this consume should be done
+        // in app
         return string(str_c);
     } else {
         NOTDONE();
@@ -379,64 +386,69 @@ void TCPConnection::peer_close() {
     LOG_INFO("peer close");
 }
 
-TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip, uint32_t maxtcpcon)
+TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
+                     uint32_t maxtcpcon)
     : emp_(emwp->get_pimpl()),
       listen_ip_(listen_ip),
       maxtcpcon_(maxtcpcon),
       unip_acceptor_(new Acceptor(emwp)) {
     seqno_ = 0;
     unip_acceptor_->set_listen_addr(listen_ip_)
-        .set_accept_readable_callback(
-            [this](shared_ptr<TCPConnection>&& shared_p_tc) {
-                tcpcon_map_[seqno_] = shared_p_tc;
-                auto seqno_tmp = seqno_++;
-                if (seqno_cb_ == nullptr) {
-                    //may happen
-                } else {
-                    seqno_cb_(seqno_tmp);
-                }
-                tcpcon_map_[seqno_tmp]->set_seqno_of_server(seqno_tmp);
-                if (after_connected_ == nullptr) {
-                    //may happen
-                } else {
-                    after_connected_(*tcpcon_map_[seqno_tmp]);
-                }
-                tcpcon_map_[seqno_tmp]
-                    ->set_normal_readable_callback(
-                        [this, seqno_tmp](TCPConnection& this_con) {
-                            if (size_cb_ == nullptr) {
+        .set_accept_readable_callback([this](
+            shared_ptr<TCPConnection>&& shared_p_tc) {
+            auto seqno_tmp = seqno_++;
+            tcpcon_map_[seqno_tmp] = shared_p_tc;
+            if (seqno_cb_ == nullptr) {
+                // may happen
+            } else {
+                seqno_cb_(seqno_tmp);
+            }
+            tcpcon_map_[seqno_tmp]->set_seqno_of_server(seqno_tmp);
+            if (after_connected_ == nullptr) {
+                // may happen
+            } else {
+                after_connected_(*tcpcon_map_[seqno_tmp]);
+            }
+            tcpcon_map_[seqno_tmp]
+                ->set_normal_readable_callback([this, seqno_tmp](
+                    TCPConnection& this_con) {
+                    if (msg_responser_cb_ != nullptr && msg_cb_ == nullptr) {
+                        auto check = this_con.try_to_read();
+                        if (check >= 1) {
+                            auto& rbuffer = this_con.get_rb_ref();
+                            auto& wbuffer = this_con.get_wb_ref();
+                            if (msg_responser_cb_ == nullptr) {
                                 ABORT("did you remember to set callback?");
                             }
-                            size_t size = size_cb_();
-                            auto check = this_con.try_to_read(size);
-                            if (check >= size) {
-                                auto& rbuffer = this_con.get_rb_ref();
-                                auto& wbuffer = this_con.get_wb_ref();
-                                if (msg_responser_cb_ == nullptr) {
-                                    ABORT("did you remember to set callback?");
-                                }
-                                msg_responser_cb_(seqno_tmp, rbuffer, wbuffer, this_con.get_bigfilesendcb());
-                                this_con.try_to_write();
-                            } else {
-                                NOTDONE();
-                            }
-                        })
-                    .set_local_close_callback([this](TCPConnection& this_con) {
-                        LOG_DEBUG("local close ");
-                        remove_tcpcon_by_seqno(this_con.get_seqno());
-                    })
-                    .set_peer_close_callback([this](TCPConnection& this_con) {
-                        remove_tcpcon_by_seqno(this_con.get_seqno());
-                        LOG_DEBUG("peer down");
-                    })
-                    .epoll_and_conmunicate();
-            })
+                            msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
+                                              this_con.get_bigfilesendcb());
+                            this_con.try_to_write();
+                        } else {
+                            NOTDONE();
+                        }
+                    } else if (msg_cb_ != nullptr &&
+                               msg_responser_cb_ == nullptr) {
+                        msg_cb_(seqno_tmp);
+                    } else {
+                        ABORT(
+                            "did you remember to set callback, or duplicate or "
+                            "conflict?");
+                    }
+                })
+                .set_local_close_callback([this](TCPConnection& this_con) {
+                    LOG_DEBUG("local close ");
+                    remove_tcpcon_by_seqno(this_con.get_seqno());
+                })
+                .set_peer_close_callback([this](TCPConnection& this_con) {
+                    remove_tcpcon_by_seqno(this_con.get_seqno());
+                    LOG_DEBUG("peer down");
+                })
+                .epoll_and_conmunicate();
+        })
         .epoll_and_accept();
 }
 
-TCPServer::~TCPServer() {
-    LOG_INFO("TCPServer destruct");
-}
+TCPServer::~TCPServer() { LOG_INFO("TCPServer destruct"); }
 
 void TCPServer::remove_tcpcon_by_seqno(uint32_t seqno) {
     auto found = tcpcon_map_.find(seqno);
@@ -445,11 +457,6 @@ void TCPServer::remove_tcpcon_by_seqno(uint32_t seqno) {
     } else {
         NOTDONE();
     }
-}
-
-TCPServer& TCPServer::set_tcpcon_read_size_callback(SizeCallBack&& cb) {
-    size_cb_ = std::move(cb);
-    return *this;
 }
 
 TCPServer& TCPServer::set_tcpcon_after_connected_callback(TCPCallBack&& cb) {
@@ -468,6 +475,11 @@ TCPServer& TCPServer::set_msg_responser_callback(MsgResponserCallBack&& cb) {
     return *this;
 }
 
+TCPServer& TCPServer::set_msg_callback(MsgCallBack&& cb) {
+    msg_cb_ = std::move(cb);
+    return *this;
+}
+
 shared_ptr<TCPConnection>& TCPServer::get_shared_tcpcon_ref_by_seqno(
     uint32_t seqno) {
     auto found = tcpcon_map_.find(seqno);
@@ -482,7 +494,8 @@ shared_ptr<TCPConnection>& TCPServer::get_shared_tcpcon_ref_by_seqno(
 
 TCPSTATE TCPServer::get_state() { NOTDONE(); }
 
-TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip, Ipv4Addr local_ip)
+TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip,
+                     Ipv4Addr local_ip)
     : emp_(emwp->get_pimpl()),
       local_ip_(local_ip),
       connect_ip_(connect_ip),
@@ -494,36 +507,43 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip, Ipv4Addr lo
                 NOTDONE();
             }
             tcpcon_ = shared_p_tc;
-            if (seqno_cb_ == nullptr) {
-                ABORT("did you remember to set callback?");
-            }
             auto seqno_tmp = generate_seqno_of_this_con();
-            seqno_cb_(seqno_tmp);
+            if (seqno_cb_ == nullptr) {
+                // may happen
+            } else {
+                seqno_cb_(seqno_tmp);
+            }
             if (after_connected_ == nullptr) {
-                //may happen
+                // may happen
             } else {
                 after_connected_(*tcpcon_);
             }
             tcpcon_
-                ->set_normal_readable_callback(
-                    [this, seqno_tmp](TCPConnection& this_con) {
-                        if (size_cb_ == nullptr) {
-                            ABORT("did you remember to set callback?");
-                        }
-                        size_t size = size_cb_();
-                        auto check = this_con.try_to_read(size);
-                        if (check >= size) {
+                ->set_normal_readable_callback([this, seqno_tmp](
+                    TCPConnection& this_con) {
+                    if (msg_responser_cb_ != nullptr && msg_cb_ == nullptr) {
+                        auto check = this_con.try_to_read();
+                        if (check >= 1) {
                             auto& rbuffer = this_con.get_rb_ref();
                             auto& wbuffer = this_con.get_wb_ref();
                             if (msg_responser_cb_ == nullptr) {
                                 ABORT("did you remember to set callback?");
                             }
-                            msg_responser_cb_(seqno_tmp, rbuffer, wbuffer, this_con.get_bigfilesendcb());
+                            msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
+                                              this_con.get_bigfilesendcb());
                             this_con.try_to_write();
                         } else {
                             NOTDONE();
                         }
-                    })
+                    } else if (msg_cb_ != nullptr &&
+                               msg_responser_cb_ == nullptr) {
+                        msg_cb_(seqno_tmp);
+                    } else {
+                        ABORT(
+                            "did you remember to set callback, or duplicate or "
+                            "conflict?");
+                    }
+                })
                 .set_peer_close_callback(
                     [](TCPConnection& this_con) { LOG_DEBUG("peer down"); })
                 .epoll_and_conmunicate();
@@ -531,9 +551,7 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip, Ipv4Addr lo
         .epoll_and_connect();
 }
 
-TCPClient::~TCPClient() {
-    LOG_INFO("TCPClient destruct");
-}
+TCPClient::~TCPClient() { LOG_INFO("TCPClient destruct"); }
 
 TCPClient& TCPClient::set_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb) {
     seqno_cb_ = std::move(cb);
@@ -545,13 +563,13 @@ TCPClient& TCPClient::set_tcpcon_after_connected_callback(TCPCallBack&& cb) {
     return *this;
 }
 
-TCPClient& TCPClient::set_tcpcon_read_size_callback(SizeCallBack&& cb) {
-    size_cb_ = std::move(cb);
+TCPClient& TCPClient::set_msg_responser_callback(MsgResponserCallBack&& cb) {
+    msg_responser_cb_ = std::move(cb);
     return *this;
 }
 
-TCPClient& TCPClient::set_msg_responser_callback(MsgResponserCallBack&& cb) {
-    msg_responser_cb_ = std::move(cb);
+TCPClient& TCPClient::set_msg_callback(MsgCallBack&& cb) {
+    msg_cb_ = std::move(cb);
     return *this;
 }
 
@@ -562,7 +580,7 @@ shared_ptr<TCPConnection>& TCPClient::get_shared_tcpcon_ref() {
 TCPSTATE TCPClient::get_state() { NOTDONE(); }
 
 uint32_t TCPClient::generate_seqno_of_this_con() {
-    //TODO
+    // TODO
     return 11111;
 }
 } /* my_http  */
