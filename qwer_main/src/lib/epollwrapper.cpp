@@ -73,9 +73,10 @@ namespace my_http {
             int active_event = epoll_vec_[ready].events;
             if (p_ch) {
                 if (emp_ != nullptr) {
-                    if ((active_event & EPOLLIN) && (active_event & EPOLLET)) {
-                        emp_->add_active_event(EventEnum::IOReadET, p_ch);      // never happen FIXME
-                    } else if (active_event & EPOLLIN) {
+                    //if ((active_event & EPOLLIN) && (active_event & EPOLLET)) {
+                    //    emp_->add_active_event(EventEnum::IOReadET, p_ch);      // never happen FIXME
+                    //} else if (active_event & EPOLLIN) {
+                    if (active_event & EPOLLIN) {
                         emp_->add_active_event(EventEnum::IORead, p_ch);
                     } else if (active_event & EPOLLOUT) {
                         emp_->add_active_event(EventEnum::IOWrite, p_ch);

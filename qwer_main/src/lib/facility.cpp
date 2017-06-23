@@ -285,7 +285,7 @@ namespace my_http {
     uint32_t Channel::get_events() {return event_;}
 
     void Channel::set_events(uint32_t para_event) {event_ |= para_event;}
-    // TODO change it to epoll edge triggered   EPOLLET
+
     uint32_t Channel::get_readonly_event_flag() {return EPOLLIN;}
 
     uint32_t Channel::get_writeonly_event_flag() {return EPOLLOUT;}

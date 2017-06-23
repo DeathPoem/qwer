@@ -233,7 +233,9 @@ TCPConnection::TCPConnection(EventManager* emp, unique_ptr<Channel> socket_ch,
 TCPConnection::~TCPConnection() {
     // TODO
     // disregister
-    LOG_INFO("one TCPConnection destruct");
+    if (tcpstate_ == TCPSTATE::Localclosed || tcpstate_ == TCPSTATE::Peerclosed) {
+        LOG_INFO("one TCPConnection normal destruct");
+    }
 }
 
 TCPConnection& TCPConnection::set_normal_readable_callback(TCPCallBack&& cb) {
@@ -268,8 +270,8 @@ void TCPConnection::epoll_and_conmunicate() {
     if (nread_cb_ != nullptr) {
         // emp_->register_event(Channel::get_readonly_event_flag() |
         // Channel::get_edge_trigger_flag(), unique_p_ch_.get(),
-        // FIXME this code won't detect socket read?
-        // FIXME the following code would lead to empty read socket
+        // FIXME this code won't detect socket read? the following code would lead to empty read socket
+        // FIXME when we use it as edge triggered mode, error
         emp_->register_event(Channel::get_readonly_event_flag(),
                              unique_p_ch_.get(),
                              [this]() { handle_epoll_readable(); });
@@ -352,7 +354,11 @@ void TCPConnection::write_by_string(string str) {
 
 size_t TCPConnection::try_to_write() {
     int len = write_sock_from_this_.get_readable_bytes();
-    return try_to_write(len);
+    auto check = try_to_write(len);
+    if (check == 0 || len != check) {
+        LOG_WARN("bad tcpcon try to write, should write bytes = %d, real write bytes = %d", len, check);
+    }
+    return check;
 }
 
 size_t TCPConnection::try_to_write(size_t len) {
@@ -417,18 +423,18 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                         if (check >= 1) {
                             auto& rbuffer = this_con.get_rb_ref();
                             auto& wbuffer = this_con.get_wb_ref();
-                            if (msg_responser_cb_ == nullptr) {
-                                ABORT("did you remember to set callback?");
-                            }
                             msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
                                               this_con.get_bigfilesendcb());
-                            this_con.try_to_write();
+                            auto check = this_con.try_to_write();
+                            LOG_INFO("server respond %d bytes", check);
                         } else {
-                            NOTDONE();
+                            NOTDONE();  // peer shutdown?
                         }
                     } else if (msg_cb_ != nullptr &&
                                msg_responser_cb_ == nullptr) {
                         msg_cb_(seqno_tmp);
+                        auto check = this_con.try_to_write();
+                        LOG_INFO("server respond %d bytes", check);
                     } else {
                         ABORT(
                             "did you remember to set callback, or duplicate or "
@@ -519,34 +525,39 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip,
                 after_connected_(*tcpcon_);
             }
             tcpcon_
-                ->set_normal_readable_callback([this, seqno_tmp](
-                    TCPConnection& this_con) {
-                    if (msg_responser_cb_ != nullptr && msg_cb_ == nullptr) {
-                        auto check = this_con.try_to_read();
-                        if (check >= 1) {
-                            auto& rbuffer = this_con.get_rb_ref();
-                            auto& wbuffer = this_con.get_wb_ref();
-                            if (msg_responser_cb_ == nullptr) {
-                                ABORT("did you remember to set callback?");
+                    ->set_normal_readable_callback([this, seqno_tmp](
+                            TCPConnection& this_con) {
+                        if (msg_responser_cb_ != nullptr && msg_cb_ == nullptr) {
+                            auto check = this_con.try_to_read();
+                            if (check >= 1) {
+                                auto& rbuffer = this_con.get_rb_ref();
+                                auto& wbuffer = this_con.get_wb_ref();
+                                msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
+                                                  this_con.get_bigfilesendcb());
+                                // FIXME the best way is every times you read, change it to epollout and in epollout cb, write it.
+                                this_con.try_to_write();
+                            } else {
+                                NOTDONE();
                             }
-                            msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
-                                              this_con.get_bigfilesendcb());
-                            this_con.try_to_write();
+                        } else if (msg_cb_ != nullptr &&
+                                   msg_responser_cb_ == nullptr) {
+                            msg_cb_(seqno_tmp);
                         } else {
-                            NOTDONE();
+                            ABORT(
+                                    "did you remember to set callback, or duplicate or "
+                                            "conflict?");
                         }
-                    } else if (msg_cb_ != nullptr &&
-                               msg_responser_cb_ == nullptr) {
-                        msg_cb_(seqno_tmp);
-                    } else {
-                        ABORT(
-                            "did you remember to set callback, or duplicate or "
-                            "conflict?");
-                    }
-                })
-                .set_peer_close_callback(
-                    [](TCPConnection& this_con) { LOG_DEBUG("peer down"); })
-                .epoll_and_conmunicate();
+                    })
+                    .set_peer_close_callback(
+                            [](TCPConnection& this_con) { LOG_DEBUG("peer down"); })
+                    .set_local_close_callback(
+                            [this](TCPConnection& this_con) {
+                                LOG_INFO("client local close cb");
+                                // TODO do check work before reset it and call the destruct function.
+                                tcpcon_.reset();
+                            }
+                    )
+                    .epoll_and_conmunicate();
         })
         .epoll_and_connect();
 }

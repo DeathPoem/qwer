@@ -7,16 +7,20 @@ namespace my_http {
     MsgResponserInterface::~MsgResponserInterface(){}
 
     EchoMsgResponser::EchoMsgResponser(){
-        echo_do_it = [](Buffer& rb, Buffer wb) {
+        echo_do_it = [](Buffer& rb, Buffer& wb) {
             char readto[4000];
             if (rb.get_readable_bytes() >= 4000) {
                 NOTDONE();
             }
-            rb.read_from_buffer(readto, rb.get_readable_bytes());
+            memset(readto, 0, sizeof readto);
+            int require_size = rb.get_readable_bytes();
+            LOG_DEBUG("in echo, read %d", require_size);
+            rb.read_from_buffer(readto, require_size);
             auto consume_size = strlen(readto);
+            LOG_DEBUG(" bad ! readto is %s", readto);
             rb.consume(consume_size);
-            char result[4000];
-            wb.write_to_buffer(result, consume_size);
+            wb.write_to_buffer(readto, consume_size);
+            LOG_DEBUG(" ! %d", wb.get_readable_bytes());
         };
     }
 

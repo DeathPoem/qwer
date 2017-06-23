@@ -205,6 +205,7 @@ void client_thread_function() {
                         .set_local_close_callback(
                                 [&clientholder](TCPConnection& this_con) {
                                     LOG_DEBUG("client close");
+                                    // FIXME when I wiresharp it, it shows three package instead of four when shutdown
                                     clientholder.shared_p_tc_vec_.clear();  // shared_ptr would destruct
                                 })
                         .epoll_and_conmunicate();
@@ -274,6 +275,7 @@ void x_server_thread_function() {
     Ipv4Addr listen_ip(Ipv4Addr::host2ip_str("localhost"), 53176);
     TCPServer tcpserver(&emw, listen_ip);
     tcpserver.set_msg_responser_callback([&msg_responser](uint32_t seqno, Buffer& rb, Buffer& wb, BigFileSendCallBack&& bfcb) {
+                LOG_DEBUG("read from client");
                 msg_responser.do_it_for_con_of_seqno(seqno, rb, wb);
             });
     for (int i = 0; i < 10; ++i) {
@@ -285,11 +287,13 @@ void x_client_thread_function() {
     EventManagerWrapper emw;
     string write_to_server = "fucking awesome!", read_from_server = "";
     Ipv4Addr server_ip(Ipv4Addr::host2ip_str("localhost"), 53176);
-    Ipv4Addr local_ip(Ipv4Addr::host2ip_str("localhost"), 98976);
+    Ipv4Addr local_ip(Ipv4Addr::host2ip_str("localhost"), 32321);
     TCPClient tcpclient(&emw, server_ip, local_ip);
     tcpclient.set_tcpcon_after_connected_callback([](TCPConnection& this_con){
+                LOG_DEBUG("write to server");
                 this_con.write_by_string("fucking awesome!");
                 }).set_msg_callback([&tcpclient, &write_to_server, &read_from_server](uint32_t seqno){
+                        LOG_DEBUG("read from server");
                         auto this_con = tcpclient.get_shared_tcpcon_ref();
                         auto read_from_server = this_con->read_by_string();
                         this_con->local_close();
@@ -301,7 +305,7 @@ void x_client_thread_function() {
 }
 
 TEST(test_case_4, test_tcp_server_client) {
-    LOG_SET_FILE("");
+    LOG_SET_FILE_P("", false);
     LOG_SET_LEVEL("INFO");
     
     auto server_thread = std::thread(x_server_thread_function);

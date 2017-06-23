@@ -196,7 +196,7 @@ size_t Buffer::read_from_buffer(int fd, size_t len) throw(std::runtime_error) {
                 if (errno == EINTR) {
                     n = 0;
                 } else {
-                    NOTDONE();
+                    ABORT("%s", strerror(errno));
                 }
             }
             left -= n;
