@@ -428,7 +428,7 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                             auto check = this_con.try_to_write();
                             LOG_INFO("server respond %d bytes", check);
                         } else {
-                            NOTDONE();  // peer shutdown?
+                            LOG_WARN("no bytes to read in read cb, level triggered?");       // if you use level triggered, it's the problem
                         }
                     } else if (msg_cb_ != nullptr &&
                                msg_responser_cb_ == nullptr) {
@@ -446,8 +446,8 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                     remove_tcpcon_by_seqno(this_con.get_seqno());
                 })
                 .set_peer_close_callback([this](TCPConnection& this_con) {
-                    remove_tcpcon_by_seqno(this_con.get_seqno());
                     LOG_DEBUG("peer down");
+                    remove_tcpcon_by_seqno(this_con.get_seqno());
                 })
                 .epoll_and_conmunicate();
         })

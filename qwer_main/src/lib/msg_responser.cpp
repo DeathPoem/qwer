@@ -14,13 +14,13 @@ namespace my_http {
             }
             memset(readto, 0, sizeof readto);
             int require_size = rb.get_readable_bytes();
-            LOG_DEBUG("in echo, read %d", require_size);
+            //LOG_DEBUG("in echo, read %d", require_size);
             rb.read_from_buffer(readto, require_size);
             auto consume_size = strlen(readto);
-            LOG_DEBUG(" bad ! readto is %s", readto);
+            //LOG_DEBUG(" bad ! readto is %s", readto);
             rb.consume(consume_size);
             wb.write_to_buffer(readto, consume_size);
-            LOG_DEBUG(" ! %d", wb.get_readable_bytes());
+            //LOG_DEBUG(" ! %d", wb.get_readable_bytes());
         };
     }
 

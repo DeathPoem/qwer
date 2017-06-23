@@ -295,7 +295,7 @@ void x_client_thread_function() {
                 }).set_msg_callback([&tcpclient, &write_to_server, &read_from_server](uint32_t seqno){
                         LOG_DEBUG("read from server");
                         auto this_con = tcpclient.get_shared_tcpcon_ref();
-                        auto read_from_server = this_con->read_by_string();
+                        read_from_server = this_con->read_by_string();
                         this_con->local_close();
                     });
     for (int i = 0; i < 10; ++i) {
@@ -305,7 +305,7 @@ void x_client_thread_function() {
 }
 
 TEST(test_case_4, test_tcp_server_client) {
-    LOG_SET_FILE_P("", false);
+    LOG_SET_FILE("");
     LOG_SET_LEVEL("INFO");
     
     auto server_thread = std::thread(x_server_thread_function);
