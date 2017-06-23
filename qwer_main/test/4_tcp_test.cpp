@@ -205,7 +205,6 @@ void client_thread_function() {
                         .set_local_close_callback(
                                 [&clientholder](TCPConnection& this_con) {
                                     LOG_DEBUG("client close");
-                                    // FIXME when I wiresharp it, it shows three package instead of four when shutdown
                                     clientholder.shared_p_tc_vec_.clear();  // shared_ptr would destruct
                                 })
                         .epoll_and_conmunicate();
@@ -259,15 +258,17 @@ void server_thread_function() {
 }
 
 
-TEST(test_case_4, test_tcp_acceptor_connector) {
-    LOG_SET_FILE("");
-    LOG_SET_LEVEL("INFO");
+//TEST(test_case_4, test_tcp_acceptor_connector) {
+//    LOG_SET_FILE("");
+//    LOG_SET_LEVEL("DEBUG");
+//
+//    auto server_thread = std::thread(server_thread_function);
+//    auto client_thread = std::thread(client_thread_function);
+//    client_thread.join();
+//    server_thread.join();
+//}
 
-    auto server_thread = std::thread(server_thread_function);
-    auto client_thread = std::thread(client_thread_function);
-    client_thread.join();
-    server_thread.join();
-}
+static int is_server_thread_down_ = 0;
 
 void x_server_thread_function() {
     EventManagerWrapper emw;
@@ -278,9 +279,10 @@ void x_server_thread_function() {
                 LOG_DEBUG("read from client");
                 msg_responser.do_it_for_con_of_seqno(seqno, rb, wb);
             });
-    for (int i = 0; i < 10; ++i) {
-        emw.loop_once(1000);
+    for (int i = 0; i < 20; ++i) {
+        emw.loop_once(500);
     }
+    is_server_thread_down_ = 1;
 }
 
 void x_client_thread_function() {
@@ -292,22 +294,25 @@ void x_client_thread_function() {
     tcpclient.set_tcpcon_after_connected_callback([](TCPConnection& this_con){
                 LOG_DEBUG("write to server");
                 this_con.write_by_string("fucking awesome!");
-                }).set_msg_callback([&tcpclient, &write_to_server, &read_from_server](uint32_t seqno){
-                        LOG_DEBUG("read from server");
+                }).set_msg_callback([&tcpclient, &write_to_server, &read_from_server](uint32_t seqno) {
+                        LOG_DEBUG("read from server, %d", is_server_thread_down_);
                         auto this_con = tcpclient.get_shared_tcpcon_ref();
-                        read_from_server = this_con->read_by_string();
+                        string re = this_con->read_by_string();
+                        read_from_server = re == "" ? read_from_server : re;
+                        this_con->get_rb_ref().consume(read_from_server.size());
                         this_con->local_close();
                     });
     for (int i = 0; i < 10; ++i) {
-        emw.loop_once(1000);
+        emw.loop_once(500);
     }
     EXPECT_EQ(read_from_server, write_to_server);
 }
 
 TEST(test_case_4, test_tcp_server_client) {
-    LOG_SET_FILE("");
-    LOG_SET_LEVEL("INFO");
-    
+    LOG_SET_FILE_P("", false);
+    LOG_SET_LEVEL("DEBUG");
+    LOG_DEBUG(" \n \n in test_tcp_server_client");
+
     auto server_thread = std::thread(x_server_thread_function);
     auto client_thread = std::thread(x_client_thread_function);
     client_thread.join();

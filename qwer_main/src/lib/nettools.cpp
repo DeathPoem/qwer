@@ -114,7 +114,9 @@ bool Buffer::invariant_check() throw(std::runtime_error) {
     if (checked && do_you_remember_consume_or_do_not_consume_) {
         return true;
     } else {
-        throw std::runtime_error("invariant of Buffer is broken");
+        std::stringstream ss;
+        ss << " " << do_you_remember_consume_or_do_not_consume_;
+        throw std::runtime_error("invariant of Buffer is broken" + ss.str());
     }
 }
 
@@ -145,6 +147,7 @@ size_t Buffer::write_to_buffer(int fd, size_t len) {
         if (n < 0) {
             if (errno == EINTR) {
                 n = 0;
+                continue;
             } else {
                 NOTDONE();
             }
@@ -160,7 +163,11 @@ size_t Buffer::write_to_buffer(int fd, size_t len) {
 }
 
 void Buffer::invariant_check_wrap() throw(std::runtime_error) {
+    try {
         invariant_check();
+    } catch (std::exception& e) {
+        LOG_ERROR(e.what());
+    }
 }
 
 void Buffer::consume(size_t len) {
@@ -195,6 +202,9 @@ size_t Buffer::read_from_buffer(int fd, size_t len) throw(std::runtime_error) {
             if (n < 0) {
                 if (errno == EINTR) {
                     n = 0;
+                } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    LOG_WARN(" read from buffer, %s", strerror(errno));
+                    break;
                 } else {
                     ABORT("%s", strerror(errno));
                 }

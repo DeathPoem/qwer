@@ -34,7 +34,7 @@ namespace my_http {
 
     void EventManager::register_event(uint32_t event, Channel* p_ch, CallBack&& cb) {
         LOG_INFO("enter EventManager::register_event");
-        p_ch->set_events(event);
+        p_ch->add_event(event);
         event_call_back_map_[make_pair(uint2enum(event), p_ch)] = std::move(cb);
         io_demultiplexer_->AddChannel(p_ch);
     }
@@ -77,7 +77,7 @@ namespace my_http {
             io_demultiplexer_->loop_once(1000);
         }
         if (!exit_) {
-            //TODO handle some
+            LOG_WARN("loop exit");
         }
     }
     

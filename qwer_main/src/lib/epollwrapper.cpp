@@ -14,7 +14,7 @@ namespace my_http {
 
     void epollwrapper::Init(int size) {
         LOG_INFO("here");
-        epoll_instance_fd_ = epoll_create(size);
+        epoll_instance_fd_ = ::epoll_create(size);
         if (epoll_instance_fd_ < 0) {
             NOTDONE();
         }
@@ -54,7 +54,7 @@ namespace my_http {
     void epollwrapper::DelChannel(Channel* p_ch) {
         LOG_INFO("here");
         auto check = ::epoll_ctl(epoll_instance_fd_, EPOLL_CTL_DEL, p_ch->get_fd(), NULL);
-        p_ch->set_events(0);
+        p_ch->add_event(0);
         if (check != 0) {
             LOG_ERROR("fail to delchannel");
         }
@@ -73,14 +73,11 @@ namespace my_http {
             int active_event = epoll_vec_[ready].events;
             if (p_ch) {
                 if (emp_ != nullptr) {
-                    //if ((active_event & EPOLLIN) && (active_event & EPOLLET)) {
-                    //    emp_->add_active_event(EventEnum::IOReadET, p_ch);      // never happen FIXME
-                    //} else if (active_event & EPOLLIN) {
-                    if (active_event & EPOLLIN) {
+                    if (active_event & Channel::get_readonly_event_flag()) {
                         emp_->add_active_event(EventEnum::IORead, p_ch);
-                    } else if (active_event & EPOLLOUT) {
+                    } else if (active_event & Channel::get_writeonly_event_flag()) {
                         emp_->add_active_event(EventEnum::IOWrite, p_ch);
-                    } else if (active_event & EPOLLHUP) {
+                    } else if (active_event & Channel::get_peer_shutdown_flag()) {
                         emp_->add_active_event(EventEnum::PeerShutDown, p_ch);
                     } else {
                         NOTDONE();

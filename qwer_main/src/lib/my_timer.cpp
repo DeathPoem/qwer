@@ -32,7 +32,7 @@ namespace my_http {
     void Timer::do_cb() { cb_(); }
 
     TimerQueue::TimerQueue(EventManager& ref_em) : ref_em_(ref_em), up_ch_(new Channel(detail::creat_timerfd_mine())) {
-        up_ch_->set_events(Channel::get_readonly_event_flag());
+        up_ch_->add_event(Channel::get_readonly_event_flag());
     }
 
     TimerQueue::~TimerQueue() {

@@ -91,8 +91,12 @@ void Acceptor::handle_epoll_readable() {
            (new_fd = ::accept(listened_socket_->get_fd(),
                               peer.get_p_socketaddr(), &len)) >= 0) {
         // accept all socket, then put them to others, by cb_
-        if (new_fd < 0) {
+        if (new_fd < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
             // no more
+            break;
+        } else if (new_fd < 0) {
+            // TODO
+            LOG_ERROR("errno = %s", strerror(errno));
             break;
         }
         auto check = ::getpeername(new_fd, peer.get_p_socketaddr(), &len);
@@ -306,19 +310,22 @@ size_t TCPConnection::try_to_read(size_t len) {
     if (nread == len) {
         return nread;
     } else {
-        SLOG_ERROR("nread = " << nread << ";len=" << len);
+        SLOG_ERROR("nread = " << nread << ";len=" << len << strerror(errno));
         NOTDONE();
     }
 }
 
 size_t TCPConnection::try_to_read() {
     int len;
+    errno = 0;
     int check = ::ioctl(unique_p_ch_->get_fd(), FIONREAD, &len);
     if (check != 0) {
         NOTDONE();
     }
     if (len == 0) {
-        LOG_WARN("try to read empty");
+        std::stringstream ss;
+        ss << "??" << tcpstate_;
+        LOG_DEBUG("try to read empty, errno=%s, tcpstate = %s", strerror(errno), ss.str().c_str());
         return 0;
     } else {
         return try_to_read(len);
@@ -331,10 +338,14 @@ string TCPConnection::read_by_string() {
     assert(1000 > nread);
     int check = read_sock_to_this_.read_from_buffer(str_c, nread);
     if (nread == check) {
-        SLOG_INFO("check =" << check);
-        // read_sock_to_this_.consume(nread);        this consume should be done
-        // in app
-        return string(str_c);
+        if (check > 0) {
+            SLOG_INFO("check =" << check);
+            // read_sock_to_this_.consume(nread);        this consume should be done
+            // in app
+            return string(str_c);
+        } else {
+            return "";
+        }
     } else {
         NOTDONE();
     }
@@ -381,7 +392,7 @@ uint32_t TCPConnection::get_seqno() { return seqno_; }
 
 void TCPConnection::local_close() {
     tcpstate_ = TCPSTATE::Localclosed;
-    unique_p_ch_->shutdown();
+    unique_p_ch_->close();
     local_close_cb_(*this);
     LOG_INFO("local TCPConnection close");
 }
@@ -428,7 +439,8 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                             auto check = this_con.try_to_write();
                             LOG_INFO("server respond %d bytes", check);
                         } else {
-                            LOG_WARN("no bytes to read in read cb, level triggered?");       // if you use level triggered, it's the problem
+                            LOG_WARN("no bytes to read in read cb, if it's level triggered, it means peer close, we gonna to close this");       // if you use level triggered, it's the problem
+                            this_con.local_close();
                         }
                     } else if (msg_cb_ != nullptr &&
                                msg_responser_cb_ == nullptr) {
@@ -442,11 +454,11 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                     }
                 })
                 .set_local_close_callback([this](TCPConnection& this_con) {
-                    LOG_DEBUG("local close ");
+                    LOG_DEBUG("server local close ");
                     remove_tcpcon_by_seqno(this_con.get_seqno());
                 })
                 .set_peer_close_callback([this](TCPConnection& this_con) {
-                    LOG_DEBUG("peer down");
+                    LOG_DEBUG("server peer down");
                     remove_tcpcon_by_seqno(this_con.get_seqno());
                 })
                 .epoll_and_conmunicate();
@@ -461,7 +473,8 @@ void TCPServer::remove_tcpcon_by_seqno(uint32_t seqno) {
     if (TCPSTATE::Gooddead == get<1>(*found)->get_state()) {
         tcpcon_map_.erase(found);
     } else {
-        NOTDONE();
+        LOG_ERROR("not goddead, close it force");
+        tcpcon_map_.erase(found);
     }
 }
 
@@ -534,7 +547,6 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip,
                                 auto& wbuffer = this_con.get_wb_ref();
                                 msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
                                                   this_con.get_bigfilesendcb());
-                                // FIXME the best way is every times you read, change it to epollout and in epollout cb, write it.
                                 this_con.try_to_write();
                             } else {
                                 NOTDONE();
@@ -549,11 +561,11 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip,
                         }
                     })
                     .set_peer_close_callback(
-                            [](TCPConnection& this_con) { LOG_DEBUG("peer down"); })
+                            [](TCPConnection& this_con) { LOG_DEBUG("client peer down"); })
                     .set_local_close_callback(
                             [this](TCPConnection& this_con) {
-                                LOG_INFO("client local close cb");
-                                // TODO do check work before reset it and call the destruct function.
+                                LOG_DEBUG("client local close");
+                                // TODO do check work and read on the way data, before reset it and call the destruct function.
                                 tcpcon_.reset();
                             }
                     )

@@ -151,6 +151,7 @@ namespace my_http {
     }
 
     Logger::~Logger() {
+        cout << "logger destruct" << endl;
         change_or_quit();
     }
 
@@ -212,7 +213,7 @@ namespace my_http {
         if (fd_ < 0) {
             throw std::runtime_error("no fd_, please LOG_SETFILE()");
         }
-        // thread safe log and file write order safe// TODO
+        // thread safe log and file write order safe
         if (!buffer_active_) {
             write(fd_, buff, strlen(buff));   // original
         } else {
@@ -284,19 +285,15 @@ namespace my_http {
 
     uint32_t Channel::get_events() {return event_;}
 
-    void Channel::set_events(uint32_t para_event) {event_ |= para_event;}
+    void Channel::add_event(uint32_t para_event) {event_ |= para_event;}
 
     uint32_t Channel::get_readonly_event_flag() {return EPOLLIN;}
 
     uint32_t Channel::get_writeonly_event_flag() {return EPOLLOUT;}
 
-    uint32_t Channel::get_peer_shutdown_flag(){return EPOLLHUP;}
+    uint32_t Channel::get_peer_shutdown_flag(){return EPOLLRDHUP;}
 
     uint32_t Channel::get_edge_trigger_flag() { return EPOLLET;}
-
-    uint32_t Channel::get_no_wr_event_flag() {return EPOLLERR;}
-
-    uint32_t Channel::get_wr_event_flag() {return EPOLLIN | EPOLLOUT;}
 
     void set_nonblock(int fd) {
         int flags = fcntl(fd, F_GETFL, 0);

@@ -60,7 +60,7 @@ inline std::string get_time_of_now();
 #define LOG_DEBUG(...) log_if_level(Logger::LogLevel::DEBUG, __VA_ARGS__)
 #define LOG_INFO(...) log_if_level(Logger::LogLevel::INFO, __VA_ARGS__)
 #define LOG_SET_FILE(file) Logger::get_logger().repare(file).set_buffer_active(true)
-#define LOG_SET_FILE_P(file, flag) Logger::get_logger().repare(file).set_buffer_active(flag)
+#define LOG_SET_FILE_P(file, flag) Logger::get_logger().repare(file).set_buffer_active(flag)        // set flag to true would let it be thread safe log
 #define LOG_SET_LEVEL(level) Logger::get_logger().set_log_level(level)
 #define ABORT(...) \
     do {\
@@ -207,11 +207,9 @@ using time_ms_t = int;
             uint32_t get_events();
             static uint32_t get_readonly_event_flag();
             static uint32_t get_writeonly_event_flag();
-            static uint32_t get_wr_event_flag();
-            static uint32_t get_no_wr_event_flag();
             static uint32_t get_edge_trigger_flag();
             static uint32_t get_peer_shutdown_flag();
-            void set_events(uint32_t para_event);
+            void add_event(uint32_t para_event);
         private:
             int fd_;
             enum ChannelType ct_;

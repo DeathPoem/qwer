@@ -36,7 +36,7 @@ struct Buffer {
     size_t read_from_buffer(int fd, size_t len) throw(std::runtime_error);
     // app consume, you must call either of this two after read from this buffer, if not, invariant_check would fall next time use it
     void consume(size_t len);
-    void do_not_consume(size_t nomeaning);
+    void do_not_consume(size_t nomeaning = 0);
 private:
     bool do_you_remember_consume_or_do_not_consume_ = true;
     size_t size() const;
