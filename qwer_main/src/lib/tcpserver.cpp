@@ -200,11 +200,11 @@ void Connector::try_connect_once() {
     unsigned int len = sizeof(*to_connect_ip_.get_p_socketaddr());
     int check = ::connect(to_connect_socket_->get_fd(),
                           to_connect_ip_.get_p_socketaddr(), len);
-    if (check != 0 && errno == 115) {
+    if (check != 0 && errno == EINPROGRESS) {
         SLOG_WARN("when ::connect to nonblocking socket fd, would cause this"
                   << strerror(errno) << ", the socket would be ready in short");
         tcpstate_ = TCPSTATE::Connected;
-    } else if (check != 0 && errno != 115) {
+    } else if (check != 0 && errno != EINPROGRESS) {
         SLOG_WARN("fail to connect, try to connect more"
                   << ";errorstr is " << strerror(errno) << ";errno=" << errno);
     } else if (check == 0) {
@@ -253,7 +253,7 @@ TCPConnection& TCPConnection::set_normal_writable_callback(TCPCallBack&& cb) {
 }
 
 TCPConnection& TCPConnection::set_peer_close_callback(TCPCallBack&& cb) {
-    close_cb_ = std::move(cb);
+    peer_close_cb_ = std::move(cb);
     return *this;
 }
 
@@ -285,7 +285,7 @@ void TCPConnection::epoll_and_conmunicate() {
                              unique_p_ch_.get(),
                              [this]() { handle_epoll_writable(); });
     }
-    if (close_cb_ != nullptr) {
+    if (peer_close_cb_ != nullptr) {
         emp_->register_event(Channel::get_peer_shutdown_flag(),
                              unique_p_ch_.get(),
                              [this]() { handle_epoll_peer_shut_down(); });
@@ -294,7 +294,15 @@ void TCPConnection::epoll_and_conmunicate() {
 
 void TCPConnection::handle_epoll_readable() { nread_cb_(*this); }
 
-void TCPConnection::handle_epoll_peer_shut_down() { peer_close(); }
+void TCPConnection::handle_epoll_peer_shut_down() {
+    if (tcpstate_ != TCPSTATE::Afterhandshake) {
+        NOTDONE();
+    }
+    if (peer_close_cb_ != nullptr) {
+        peer_close_cb_(*this);
+    }
+    peer_close();
+}
 
 void TCPConnection::handle_epoll_writable() { nwrite_cb_(*this); }
 
@@ -391,16 +399,21 @@ TCPConnection& TCPConnection::set_seqno_of_server(uint32_t seqno) {
 uint32_t TCPConnection::get_seqno() { return seqno_; }
 
 void TCPConnection::local_close() {
+    if (tcpstate_ != TCPSTATE::Afterhandshake && tcpstate_ != TCPSTATE::Peerclosed) {
+        NOTDONE();
+    }
+    if (local_close_cb_ != nullptr) {
+        local_close_cb_(*this);
+    }
     tcpstate_ = TCPSTATE::Localclosed;
-    unique_p_ch_->close();
-    local_close_cb_(*this);
     LOG_INFO("local TCPConnection close");
 }
 
 void TCPConnection::peer_close() {
+    // deregister
+    emp_->remove_registered_event(Channel::get_peer_shutdown_flag(), unique_p_ch_.get());
     tcpstate_ = TCPSTATE::Peerclosed;
-    close_cb_(*this);
-    LOG_INFO("peer close");
+    LOG_INFO("peer close ");
 }
 
 TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
@@ -440,7 +453,7 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                             LOG_INFO("server respond %d bytes", check);
                         } else {
                             LOG_WARN("no bytes to read in read cb, if it's level triggered, it means peer close, we gonna to close this");       // if you use level triggered, it's the problem
-                            this_con.local_close();
+                            this_con.peer_close();
                         }
                     } else if (msg_cb_ != nullptr &&
                                msg_responser_cb_ == nullptr) {
@@ -459,7 +472,6 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                 })
                 .set_peer_close_callback([this](TCPConnection& this_con) {
                     LOG_DEBUG("server peer down");
-                    remove_tcpcon_by_seqno(this_con.get_seqno());
                 })
                 .epoll_and_conmunicate();
         })

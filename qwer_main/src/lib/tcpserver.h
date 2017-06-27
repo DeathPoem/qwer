@@ -130,7 +130,7 @@ private:
     EventManager* const emp_;
     TCPCallBack nread_cb_;
     TCPCallBack nwrite_cb_;
-    TCPCallBack close_cb_;
+    TCPCallBack peer_close_cb_;
     TCPCallBack local_close_cb_;
     TCPSTATE tcpstate_;
     uint32_t seqno_;

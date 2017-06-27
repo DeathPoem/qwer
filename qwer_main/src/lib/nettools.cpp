@@ -124,7 +124,7 @@ size_t Buffer::get_readable_bytes() const { return end_ - begin_; }
 
 size_t Buffer::get_writable_bytes() const { return capacity_ - end_; }
 
-size_t Buffer::write_to_buffer(char* writefrom, size_t len) {
+size_t Buffer::write_to_buffer(char const * writefrom, size_t len) {
     invariant_check_wrap();
     char* writeto = get_end();
     if (get_writable_bytes() < len) {

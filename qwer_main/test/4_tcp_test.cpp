@@ -258,17 +258,17 @@ void server_thread_function() {
 }
 
 
-//TEST(test_case_4, test_tcp_acceptor_connector) {
-//    LOG_SET_FILE("");
-//    LOG_SET_LEVEL("DEBUG");
-//
-//    auto server_thread = std::thread(server_thread_function);
-//    auto client_thread = std::thread(client_thread_function);
-//    client_thread.join();
-//    server_thread.join();
-//}
+TEST(test_case_4, test_tcp_acceptor_connector) {
+    LOG_SET_FILE_P("", true);
+    LOG_SET_LEVEL("INFO");
 
-static int is_server_thread_down_ = 0;
+    auto server_thread = std::thread(server_thread_function);
+    auto client_thread = std::thread(client_thread_function);
+    client_thread.join();
+    server_thread.join();
+}
+
+static int is_server_thread_down_;
 
 void x_server_thread_function() {
     EventManagerWrapper emw;
@@ -282,6 +282,7 @@ void x_server_thread_function() {
     for (int i = 0; i < 20; ++i) {
         emw.loop_once(500);
     }
+    assert(is_server_thread_down_ == 0);
     is_server_thread_down_ = 1;
 }
 
@@ -309,7 +310,7 @@ void x_client_thread_function() {
 }
 
 TEST(test_case_4, test_tcp_server_client) {
-    LOG_SET_FILE_P("", false);
+    LOG_SET_FILE_P("", true);
     LOG_SET_LEVEL("DEBUG");
     LOG_DEBUG(" \n \n in test_tcp_server_client");
 

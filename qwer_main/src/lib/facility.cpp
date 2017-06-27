@@ -266,11 +266,7 @@ namespace my_http {
     }
 
     Channel::~Channel() {
-        if (is_closed()) {
-
-        } else {
-            close();
-        }
+        close();
     }
 
     int Channel::get_fd() {return fd_;}
@@ -281,7 +277,12 @@ namespace my_http {
 
     void Channel::shutdown() { ::shutdown(fd_, SHUT_WR); is_shutdown_ = true;}
 
-    void Channel::close() {::close(fd_); is_closed_ = true;}
+    void Channel::close() {
+        if (!is_closed_) {
+            ::close(fd_);
+            is_closed_ = true;
+        }
+    }
 
     uint32_t Channel::get_events() {return event_;}
 

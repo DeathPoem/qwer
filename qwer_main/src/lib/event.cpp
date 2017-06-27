@@ -97,18 +97,7 @@ namespace my_http {
             if (found != event_call_back_map_.end()) {
                 get<1>(*found)();
             } else {
-                // handle this : IOReadET would return IORead when epoll_wait
-                if (va.first == EventEnum::IORead) {
-                    va.first = EventEnum ::IOReadET;
-                    auto found = event_call_back_map_.find(va);
-                    if (found != event_call_back_map_.end()) {
-                        get<1>(*found);
-                    } else {
-                        NOTDONE();
-                    }
-                } else {
-                    NOTDONE();
-                }
+                NOTDONE();
             }
         }
         active_channels_.clear();
@@ -150,13 +139,13 @@ namespace my_http {
         uint32_t event;
 
         if (eventenum == EventEnum::IORead) {
-            event = EPOLLIN;
+            event = Channel::get_readonly_event_flag();
         } else if (eventenum == EventEnum::IOWrite) {
-            event = EPOLLOUT;
+            event = Channel::get_writeonly_event_flag();
         } else if (eventenum == EventEnum::PeerShutDown) {
-            event = EPOLLHUP;
+            event = Channel::get_peer_shutdown_flag();
         } else if (eventenum == EventEnum::IOReadET) {
-            event = EPOLLIN | EPOLLET;
+            event = Channel::get_readonly_event_flag() | Channel::get_edge_trigger_flag();
         } else {
             NOTDONE();
         }
@@ -165,13 +154,13 @@ namespace my_http {
 
     EventEnum uint2enum(uint32_t event) {
         EventEnum para_enum;
-        if (event == EPOLLIN) {
+        if (event == Channel::get_readonly_event_flag()) {
             para_enum = EventEnum::IORead;
-        } else if (event == EPOLLOUT) {
+        } else if (event == Channel::get_writeonly_event_flag()) {
             para_enum = EventEnum::IOWrite;
-        } else if (event == EPOLLHUP) {
+        } else if (event == Channel::get_peer_shutdown_flag()) {
             para_enum = EventEnum::PeerShutDown;
-        } else if (event == EPOLLIN | EPOLLET) {
+        } else if (event == Channel::get_readonly_event_flag() | Channel::get_edge_trigger_flag()) {
             para_enum = EventEnum ::IOReadET;
         } else {
             NOTDONE();
