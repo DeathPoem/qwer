@@ -39,11 +39,26 @@ namespace my_http {
         io_demultiplexer_->AddChannel(p_ch);
     }
 
-    void EventManager::remove_registered_event(uint32_t event, Channel* p_ch) {
+    void EventManager::remove_registered_event(uint32_t event, Channel *p_ch) {
         LOG_INFO("enter EventManager::remove_registered_event");
-        io_demultiplexer_->DelChannel(p_ch);
+        p_ch->delete_event(event);
+        io_demultiplexer_->ModChannel(p_ch);
         auto found = event_call_back_map_.find(make_pair(uint2enum(event), p_ch));
         event_call_back_map_.erase(found);
+    }
+
+    void EventManager::remove_channel(Channel *p_ch) {
+        LOG_INFO("enter EventManager::remove_registered_event");
+        io_demultiplexer_->DelChannel(p_ch);
+        vector<pair<EventEnum, Channel*>> to_delete_vec;
+        for_each(event_call_back_map_.begin(), event_call_back_map_.end(), [&to_delete_vec, p_ch](auto x_p){
+            if (get<1>(get<0>(x_p)) == p_ch) {
+                to_delete_vec.push_back(get<0>(x_p));
+            }
+        });
+        for (auto td : to_delete_vec) {
+            event_call_back_map_.erase(event_call_back_map_.find(td));
+        }
     }
     
     void EventManager::loop_once(time_ms_t timeout) {

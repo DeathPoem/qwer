@@ -210,6 +210,7 @@ using time_ms_t = int;
             static uint32_t get_edge_trigger_flag();
             static uint32_t get_peer_shutdown_flag();
             void add_event(uint32_t para_event);
+            void delete_event(uint32_t para_event);
         private:
             int fd_;
             enum ChannelType ct_;

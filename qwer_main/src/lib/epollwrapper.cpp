@@ -54,7 +54,6 @@ namespace my_http {
     void epollwrapper::DelChannel(Channel* p_ch) {
         LOG_INFO("here");
         auto check = ::epoll_ctl(epoll_instance_fd_, EPOLL_CTL_DEL, p_ch->get_fd(), NULL);
-        p_ch->add_event(0);
         if (check != 0) {
             LOG_ERROR("fail to delchannel");
         }

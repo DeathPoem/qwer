@@ -286,6 +286,10 @@ namespace my_http {
 
     uint32_t Channel::get_events() {return event_;}
 
+    void Channel::delete_event(uint32_t para_event) {
+        event_ &= ~para_event;
+    }
+
     void Channel::add_event(uint32_t para_event) {event_ |= para_event;}
 
     uint32_t Channel::get_readonly_event_flag() {return EPOLLIN;}

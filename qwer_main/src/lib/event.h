@@ -28,7 +28,8 @@ namespace my_http {
             virtual ~EventManager();
             //void register_event(Channel* p_ch, CallBack&& cb);
             void register_event(uint32_t event, Channel* p_ch, CallBack&& cb);
-            void remove_registered_event(uint32_t event, Channel* p_ch);
+            void remove_registered_event(uint32_t event, Channel *p_ch);
+            void remove_channel(Channel* p_ch);
             TimerId run_at(time_ms_t para_t, CallBack&& cb);    // means after FIXME
             TimerId run_after(time_ms_t para_t, CallBack&& cb);
             void loop();
@@ -38,7 +39,7 @@ namespace my_http {
             void start_up();
             void exit();
         private:
-            // TODO we need a more safe key design
+            // TODO we need a more safe and more effective key design
             map<pair<EventEnum, Channel*>, CallBack> event_call_back_map_;
             unique_ptr<IODemultiplexerInterface> io_demultiplexer_;
             vector<pair<EventEnum, Channel*>> active_channels_;
