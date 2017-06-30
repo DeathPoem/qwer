@@ -1,4 +1,4 @@
-#include "msg_responser.h"
+#include "msg_codec.h"
 
 namespace my_http {
 
@@ -42,4 +42,8 @@ namespace my_http {
     void EchoMsgResponser::register_cb_for_con_of_seqno(uint32_t seqno, MsgResponserDoCallBack&& cb) {
         //cb_map_[seqno] = std::move(cb);   // nothing would be done with Echo
     }
+
+    MsgCodecInterface::MsgCodecInterface() {}
+
+    MsgCodecInterface::~MsgCodecInterface() {}
 } /* my_http  */ 

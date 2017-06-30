@@ -387,7 +387,12 @@ size_t TCPConnection::try_to_write(size_t len) {
         write_sock_from_this_.consume(len);
         return nwrite;
     } else {
-        NOTDONE();
+        if (nwrite < 0 && errno == EAGAIN) {
+            // TODO
+            ABORT("handle this !!! TODO");
+        } else {
+            NOTDONE();
+        }
     }
 }
 

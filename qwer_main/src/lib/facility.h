@@ -12,6 +12,7 @@
 #include <sstream>
 #include <netdb.h>
 #include <fcntl.h>
+#include <queue>
 #include <cstring>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -22,6 +23,7 @@
 #include <thread>
 #include <mutex>
 #include <unordered_map>
+#include <condition_variable>
 #include <iostream>
 #include <unordered_set>
 #include <vector>
@@ -112,6 +114,9 @@ using std::weak_ptr;
 using std::pair;
 using std::tuple;
 using std::stoi;
+using std::queue;
+using std::mutex;
+using std::condition_variable;
 using std::make_pair;
 using std::unordered_map;
 using std::to_string;

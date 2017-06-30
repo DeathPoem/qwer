@@ -10,6 +10,25 @@
 #include "facility.h"
 
 namespace my_http {
+    // actually, we can use SyncQueue
+template<typename T>
+    class ThreadSafeQueue
+    {
+    public:
+        ThreadSafeQueue ();
+        ThreadSafeQueue(ThreadSafeQueue const & other);
+        ThreadSafeQueue& operator=(ThreadSafeQueue const & other) = delete;
+        virtual ~ThreadSafeQueue ();
+    
+        void push(T new_v);
+        bool try_pop_2(T& value);
+        void wait_until_pop_2(T& value);
+        bool empty() const;
+    private:
+        std::mutex m_;
+        std::queue<T> queue_;
+
+    };
 template <typename TaskT>
 class SyncQueue {
 public:

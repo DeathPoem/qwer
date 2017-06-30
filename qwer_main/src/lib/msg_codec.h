@@ -30,5 +30,16 @@ private:
     map<uint32_t, MsgResponserDoCallBack> cb_map_;
     MsgResponserDoCallBack echo_do_it; // this would be invoked if no cb for particular seqno
 };
+
+class MsgCodecInterface {
+public:
+    MsgCodecInterface ();
+    virtual ~MsgCodecInterface ();
+    virtual void to_decode(Buffer& buffer) = 0;
+    virtual void to_encode(Buffer& buffer) = 0;
+private:
+    
+};
+
 } /* my_http  */
 #endif /* ifndef MSG_RESPONSER_H */
