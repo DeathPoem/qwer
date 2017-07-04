@@ -1,6 +1,7 @@
 **/bin/*
 **/cmake-build-debug/*
 **/.idea
+**/html
 !*.gitkeep
 **/*.swp
 **/tags

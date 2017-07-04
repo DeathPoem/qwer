@@ -9,9 +9,8 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
         cd ./qwer/qwer_main
         mkdir ./bin
         cd ./bin
-        ../runme_instead_of_cmake.sh 
-        make 
-        make check (or ctest -V)
+        ../runme_instead_of_cmake.sh // or cmake ..
+        make && make check // or ctest -V
 
 # develop
 
