@@ -74,7 +74,7 @@ Ipv4Addr::Ipv4Addr(string ipdotdecimal, int port) {
 string Ipv4Addr::get_ip_str() { return string(inet_ntoa(addr_.sin_addr)); }
 
 Buffer::Buffer()
-    : buffer_(vector<char>(initial_size_, 'a')),
+    : buffer_(vector<char>(initial_size_, '\0')),
       begin_(0),
       end_(0),
       capacity_(buffer_.size()) {}
@@ -127,10 +127,10 @@ size_t Buffer::get_writable_bytes() const { return capacity_ - end_; }
 size_t Buffer::write_to_buffer(char const * writefrom, size_t len) {
     invariant_check_wrap();
     char* writeto = get_end();
-    if (get_writable_bytes() < len) {
-        buffer_.resize(buffer_.size() + len);
+    while (get_writable_bytes() < len) {
+        buffer_.resize(buffer_.size() + initial_size_, '\0');
     }
-    std::memcpy(writeto, writefrom, len);
+    if (std::memcpy(writeto, writefrom, len) < 0) {NOTDONE();}
     end_ += len;
     return len;
 }

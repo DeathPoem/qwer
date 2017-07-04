@@ -22,6 +22,11 @@ using namespace my_http;
 std::condition_variable cv;
 std::mutex m;
 static int state = 0;
+static atomic<bool> server_to_exit(false);
+static atomic<bool> server_is_on(false);
+static mutex x_mm;
+static condition_variable x_cv;
+
 // connecting and send some
 void clientfunc(int port, Ipv4Addr ipaddr) {
     Ipv4Addr ip(Ipv4Addr::host2ip_str("localhost"), port);
@@ -190,29 +195,39 @@ void client_thread_function() {
     string outer;
     my_connector.set_local_addr(clientip)
             .set_connect_to_addr(listen_ip)
-            .set_connect_callback([&outer, &clientholder](
-                    shared_ptr<TCPConnection> shared_p_tc) {
+            .set_connect_callback([&outer, &clientholder](shared_ptr<TCPConnection>&& shared_p_tc) {
                 clientholder.shared_p_tc_vec_.push_back(shared_p_tc);
                 LOG_DEBUG("connected and write to server!");
                 shared_p_tc->write_by_string("fucking awesome!");
                 shared_p_tc
-                        ->set_normal_readable_callback([&outer](TCPConnection& this_con) {
+                        ->set_normal_readable_callback([&outer, &clientholder](TCPConnection& this_con) {
                             LOG_DEBUG("read from server");
-                            outer = this_con.read_by_string();
-                            this_con.get_rb_ref().consume(outer.size());
-                            this_con.local_close();
+                            string s = this_con.read_by_string();
+                            if (s.empty()) {
+                                NOTDONE();
+                            } else {
+                                outer = s;
+                                this_con.get_rb_ref().consume(outer.size());
+                                // TODO delete
+                                LOG_ERROR("jj:%d", clientholder.shared_p_tc_vec_[0].use_count());
+                                this_con.local_close();
+                            }
                         })
                         .set_local_close_callback(
                                 [&clientholder](TCPConnection& this_con) {
                                     LOG_DEBUG("client close");
                                     clientholder.shared_p_tc_vec_.clear();  // shared_ptr would destruct
                                 })
+                        .set_peer_close_callback(
+                                [](TCPConnection& this_con) {
+                                    LOG_DEBUG("client peer close");
+                                }
+                        )
                         .epoll_and_conmunicate();
             })
             .epoll_and_connect();
     for (int c1 : {1, 2, 3, 4, 5}) {
-        SLOG_INFO("client " << c1 << " times loop_once");
-        emw.loop_once(1 * 1000);
+        emw.loop_once(1000);
     }
     EXPECT_EQ(outer, "fucking awesome!");
 }
@@ -224,51 +239,60 @@ void server_thread_function() {
     TCPConnectionHolder holder;
     XMsgResponser msg_responser;
     acceptor.set_listen_addr(listen_ip)
-            .set_accept_readable_callback([&holder, &msg_responser](
-                    shared_ptr<TCPConnection> shared_p_tc) {
+            .set_accept_readable_callback([&holder, &msg_responser](shared_ptr<TCPConnection>&& shared_p_tc) {
                 LOG_DEBUG("accept success");
                 holder.shared_p_tc_vec_.push_back(shared_p_tc);
                 shared_p_tc
                         ->set_normal_readable_callback(
                                 [&msg_responser](TCPConnection& this_con) {
                                     LOG_DEBUG("read from client");
-                                    size_t check = this_con.try_to_read();
+                                    size_t check = this_con.to_read();
                                     if (check >= 1) {
                                         LOG_DEBUG("read from client as %d", check);
                                         auto& rbuffer = this_con.get_rb_ref();
                                         auto& wbuffer = this_con.get_wb_ref();
                                         msg_responser.do_it(rbuffer, wbuffer);
-                                        this_con.try_to_write();
+                                        this_con.to_write();
                                     } else {
                                         LOG_WARN("read empty, why?");
                                     }
                                     LOG_DEBUG("end read from client");
                                 })
-                        .set_peer_close_callback(
-                                [](TCPConnection& this_con) {
-                                    LOG_DEBUG("client down");
-                                })
+                        .set_peer_close_callback([](TCPConnection& this_con){
+                            LOG_DEBUG("server : peer close");
+                        })
+                        .set_local_close_callback([](TCPConnection& this_con){
+                            LOG_DEBUG("server : local close");
+                        })
                         .epoll_and_conmunicate();
             })
             .epoll_and_accept();
-    for (int c1 : {1, 2, 3, 4, 5, 6, 7, 8, 9}) {
-        SLOG_INFO("server " << c1 << " times loop_once");
-        emw.loop_once(1 * 1000);
+    for (int i = 0; i < 100; ++i) {
+        if (!server_to_exit) {
+            server_is_on = true;
+            x_cv.notify_one();
+            emw.loop_once(500);
+        }
     }
 }
 
 
 TEST(test_case_4, test_tcp_acceptor_connector) {
-    LOG_SET_FILE_P("", true);
+    LOG_SET_FILE_P("", false);
     LOG_SET_LEVEL("INFO");
 
     auto server_thread = std::thread(server_thread_function);
+    {
+        std::unique_lock<mutex> lk(x_mm);
+        x_cv.wait(lk, []{ return server_is_on == true;});
+    }
     auto client_thread = std::thread(client_thread_function);
     client_thread.join();
+    server_to_exit = true;
     server_thread.join();
+    server_to_exit = false;
+    server_is_on = false;
 }
-
-static int is_server_thread_down_;
 
 void x_server_thread_function() {
     EventManagerWrapper emw;
@@ -279,11 +303,13 @@ void x_server_thread_function() {
                 LOG_DEBUG("read from client");
                 msg_responser.do_it_for_con_of_seqno(seqno, rb, wb);
             });
-    for (int i = 0; i < 20; ++i) {
-        emw.loop_once(500);
+    for (int i = 0; i < 100; ++i) {
+        if (!server_to_exit) {
+            server_is_on = true;
+            x_cv.notify_one();
+            emw.loop_once(500);
+        }
     }
-    assert(is_server_thread_down_ == 0);
-    is_server_thread_down_ = 1;
 }
 
 void x_client_thread_function() {
@@ -296,8 +322,11 @@ void x_client_thread_function() {
                 LOG_DEBUG("write to server");
                 this_con.write_by_string("fucking awesome!");
                 }).set_msg_callback([&tcpclient, &write_to_server, &read_from_server](uint32_t seqno) {
-                        LOG_DEBUG("read from server, %d", is_server_thread_down_);
+                        LOG_DEBUG("read from server, ");
                         auto this_con = tcpclient.get_shared_tcpcon_ref();
+                        if (this_con->get_state() == TCPSTATE::Localclosed) {
+                            NOTDONE();
+                        }
                         string re = this_con->read_by_string();
                         read_from_server = re == "" ? read_from_server : re;
                         this_con->get_rb_ref().consume(read_from_server.size());
@@ -310,14 +339,21 @@ void x_client_thread_function() {
 }
 
 TEST(test_case_4, test_tcp_server_client) {
-    LOG_SET_FILE_P("", true);
+    LOG_SET_FILE_P("", false);
     LOG_SET_LEVEL("DEBUG");
     LOG_DEBUG(" \n \n in test_tcp_server_client");
 
     auto server_thread = std::thread(x_server_thread_function);
+    {
+        std::unique_lock<mutex> lk(x_mm);
+        x_cv.wait(lk, []{ return server_is_on == true;});
+    }
     auto client_thread = std::thread(x_client_thread_function);
     client_thread.join();
+    server_to_exit = true;
     server_thread.join();
+    server_to_exit = false;
+    server_is_on = false;
 }
 
 int main(int argc, char** argv) {

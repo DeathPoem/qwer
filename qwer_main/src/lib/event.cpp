@@ -9,8 +9,8 @@ namespace my_http {
             os << "IOWrite";
         } else if (e == EventEnum::PeerShutDown) {
             os << "PeerShutDown";
-        } else if (e == EventEnum::IOReadET) {
-            os << "IOReadET";
+        } else if (e == EventEnum::Error) {
+            os << "Error";
         } else {
             NOTDONE();
         }
@@ -50,6 +50,7 @@ namespace my_http {
     void EventManager::remove_channel(Channel *p_ch) {
         LOG_INFO("enter EventManager::remove_registered_event");
         io_demultiplexer_->DelChannel(p_ch);
+        p_ch->delete_event(p_ch->get_events());
         vector<pair<EventEnum, Channel*>> to_delete_vec;
         for_each(event_call_back_map_.begin(), event_call_back_map_.end(), [&to_delete_vec, p_ch](auto x_p){
             if (get<1>(get<0>(x_p)) == p_ch) {
@@ -82,17 +83,14 @@ namespace my_http {
     }
 
     void EventManager::exit() {
+        LOG_DEBUG("event loop exit");
         exit_ = true;
     }
 
     void EventManager::loop() {
         LOG_INFO("here");
-        int anti_dead_loop = 0;
-        while (!exit_ && anti_dead_loop++ < 40) {
+        while (!exit_) {
             io_demultiplexer_->loop_once(1000);
-        }
-        if (!exit_) {
-            LOG_WARN("loop exit");
         }
     }
     
@@ -159,8 +157,8 @@ namespace my_http {
             event = Channel::get_writeonly_event_flag();
         } else if (eventenum == EventEnum::PeerShutDown) {
             event = Channel::get_peer_shutdown_flag();
-        } else if (eventenum == EventEnum::IOReadET) {
-            event = Channel::get_readonly_event_flag() | Channel::get_edge_trigger_flag();
+        } else if (eventenum == EventEnum::Error) {
+            event = Channel::get_err_flag();
         } else {
             NOTDONE();
         }
@@ -175,8 +173,8 @@ namespace my_http {
             para_enum = EventEnum::IOWrite;
         } else if (event == Channel::get_peer_shutdown_flag()) {
             para_enum = EventEnum::PeerShutDown;
-        } else if (event == Channel::get_readonly_event_flag() | Channel::get_edge_trigger_flag()) {
-            para_enum = EventEnum ::IOReadET;
+        } else if (event == Channel::get_err_flag()) {
+            para_enum = EventEnum ::Error;
         } else {
             NOTDONE();
         }

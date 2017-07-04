@@ -83,8 +83,11 @@ public:
 
 private:
     void connect_it();
-    void try_connect_once();
+    void try_connect_once();    // would connect and epoll wait epollout when EALREADY
     void handle_epoll_connected();
+    void handle_epoll_in_good();
+    void handle_epoll_in_bad();
+    void good_connect_tail_work();
     void close();
     int connect_stretegy_flag_ = 0;
     size_t retry_count_ = 0;
@@ -105,16 +108,16 @@ public:
     virtual ~TCPConnection();
     TCPConnection& set_normal_readable_callback(TCPCallBack&& cb);
     TCPConnection& set_normal_writable_callback(TCPCallBack&& cb);
-    TCPConnection& set_peer_close_callback(TCPCallBack&& cb);
-    TCPConnection& set_local_close_callback(TCPCallBack&& cb);
+    TCPConnection& set_peer_close_callback(TCPCallBack&& cb);       // this cb must not lead to destructor
+    TCPConnection& set_local_close_callback(TCPCallBack&& cb);     // this cb can lead to destructor
     TCPConnection& set_idle_callback();
     TCPConnection& set_seqno_of_server(uint32_t seqno);
     void epoll_and_conmunicate();
     // nonblocking read and write
-    size_t try_to_write(size_t len);
-    size_t try_to_write();
+    size_t try_to_write(size_t len) throw(std::runtime_error);
+    size_t to_write();
     size_t try_to_read(size_t len);
-    size_t try_to_read();
+    size_t to_read();
     void write_by_string(string str);
     string read_by_string();
     Buffer& get_rb_ref();

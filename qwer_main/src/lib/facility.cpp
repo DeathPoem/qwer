@@ -271,11 +271,12 @@ namespace my_http {
 
     int Channel::get_fd() {return fd_;}
 
-    bool Channel::is_shutdown() { return  is_shutdown_;}
-
-    bool Channel::is_closed() {return is_closed_;}
-
-    void Channel::shutdown() { ::shutdown(fd_, SHUT_WR); is_shutdown_ = true;}
+    void Channel::shutdown() {
+        if (!is_shutdown_) {
+            ::shutdown(fd_, SHUT_WR);
+            is_shutdown_ = true;
+        }
+    }
 
     void Channel::close() {
         if (!is_closed_) {
@@ -299,6 +300,8 @@ namespace my_http {
     uint32_t Channel::get_peer_shutdown_flag(){return EPOLLRDHUP;}
 
     uint32_t Channel::get_edge_trigger_flag() { return EPOLLET;}
+
+    uint32_t Channel::get_err_flag() { return  EPOLLERR;}
 
     void set_nonblock(int fd) {
         int flags = fcntl(fd, F_GETFL, 0);

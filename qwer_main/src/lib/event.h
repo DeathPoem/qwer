@@ -15,7 +15,7 @@ namespace my_http {
 
     // translate from Event to EventEnum in EventManagerWrapper::register_event()
     enum class EventEnum {IODemultiplexCB, IORead, IOWrite,
-                        Timeout, PeerShutDown, IOReadET};
+                        Timeout, PeerShutDown, Error};
 
     std::ostream& operator<<(std::ostream&, EventEnum);
 

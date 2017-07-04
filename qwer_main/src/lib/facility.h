@@ -22,6 +22,7 @@
 #include <map>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <unordered_map>
 #include <condition_variable>
 #include <iostream>
@@ -111,6 +112,7 @@ using std::unordered_set;
 using std::unordered_map;
 using std::shared_ptr;
 using std::weak_ptr;
+using std::atomic;
 using std::pair;
 using std::tuple;
 using std::stoi;
@@ -196,7 +198,6 @@ using time_ms_t = int;
             };
     };
 
-    enum class ChannelType {TCP, TIMER, UDP, FD};
     // name it as 'channel', which wraps the operation of fd that can be epoll or poll
     class Channel : private noncopyable {
         public:
@@ -204,9 +205,7 @@ using time_ms_t = int;
             virtual ~Channel ();
             int get_fd();
             void shutdown();
-            bool is_shutdown();
             void close();
-            bool is_closed();
             //struct epoll_event* get_epoll_event_p(); this is not good, because if you return a heap pointer, the caller would be responsible to delete it.
             // following would be more good
             uint32_t get_events();
@@ -214,11 +213,11 @@ using time_ms_t = int;
             static uint32_t get_writeonly_event_flag();
             static uint32_t get_edge_trigger_flag();
             static uint32_t get_peer_shutdown_flag();
+            static uint32_t get_err_flag();
             void add_event(uint32_t para_event);
             void delete_event(uint32_t para_event);
         private:
             int fd_;
-            enum ChannelType ct_;
             uint32_t event_;
             bool is_closed_ = false;
             bool is_shutdown_ = false;

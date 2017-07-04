@@ -1,6 +1,11 @@
 #include "httpprotocol.h"
 
 namespace my_http {
+
+    HttpMsg::~HttpMsg() {}
+
+    HttpMsg::HttpMsg() {}
+
 HttpMsg::HttpMethod HttpMsg::str2Method(string s) {
     if (s == "Get") {
         return HttpMethod::Get;
@@ -57,6 +62,18 @@ string HttpMsg::Status2str(HttpStatusCodes hs) {
     }
 }
 
+HttpRequest::HttpRequest() {}
+
+HttpRequest::~HttpRequest() {}
+
+    HttpResponse::HttpResponse() {}
+
+    HttpResponse::~HttpResponse() {}
+
+    HttpClient::~HttpClient() {}
+
+    HttpServer::~HttpServer() {}
+
 size_t HttpRequest::to_encode(Buffer& buffer) {
     string content;
     content +=
@@ -70,6 +87,7 @@ size_t HttpRequest::to_encode(Buffer& buffer) {
     if (!body_.empty()) {
         content += CRLF_;
         content += body_;
+        content += CRLF_;
     }
     buffer.write_to_buffer(content.c_str(), content.size());
     return content.size();
@@ -79,8 +97,8 @@ size_t HttpMsg::try_decode_of(Buffer& buffer,
                               std::function<void(string)> const& func,
                               map<int, pair<string, string>>& headers_lines_ref,
                               HttpVersion& version_ref, string& body_ref) {
-    size_t size = buffer.get_readable_bytes();
-    char* const content = new char[size + 1];
+    size_t const size = buffer.get_readable_bytes();
+    char* content = new char[size + 1];
     memset(content, 0, size + 1);
     size_t parse_size = 0;
     {
@@ -88,52 +106,53 @@ size_t HttpMsg::try_decode_of(Buffer& buffer,
         size_t cur = 0;
         size_t scaned = 0;
         size_t head_map_n = 0;
-        bool good_parsed = false;
         bool noheaders = false;
         bool endone = false;
+        assert(*(content + size - 1) != '\r');
         while (cur < size) {
-            if (content[cur] != '\r' &&
-                memcpy(&content[cur], &CRLF_, sizeof CRLF_) != 0 && !endone) {
-                cur++;
-            } else {
+            if (cur < size - 1 && ::memcmp(content + cur, CRLF_.c_str(), CRLF_.size()) == 0) {
                 if (cur - scaned > 2048) {
                     NOTDONE();
                 }
-                string line = string(&content[scaned], cur - scaned);
+                string line = string(content + scaned, cur - scaned);
                 if (version_ref == HttpVersion::Invalid) {
                     // init line
                     func(line);
                 } else if (version_ref != HttpVersion::Invalid &&
-                           memcpy(&content[scaned], "HTTP", 4) == 0) {
+                           ::memcmp(content + scaned, "HTTP", 4) == 0) {
                     endone = true;  // maybe two package in the buffer
-                    good_parsed = true;
                 } else if (noheaders) {
                     // body
                     body_ref = line;
-                } else if (cur != size - sizeof CRLF_  // not last CRLF_
-                           &&
-                           memcpy(&content[cur - sizeof CRLF_], &CRLF_,
-                                  sizeof CRLF_) == 0) {
+                } else if (!noheaders && cur < size - CRLF_.size()  // not last CRLF_
+                           && line == "") { // double CRLF would cause this
                     // blankline
                     noheaders = true;
                 } else {
                     // header
-                    if (line.empty()) {
-                        throw std::runtime_error("can't be empty");
-                    }
+                    if (line.empty()) { ABORT("can't be empty"); }
                     vector<string> header_tokens;
-                    auto check = detail::splite_by_delimiter(
-                        line, header_tokens, string(":"));
-                    assert(check == 1);
-                    headers_lines_ref[head_map_n++] =
-                        make_pair(header_tokens[0], header_tokens[1]);
+                    int check;
+                    check = detail::splite_by_delimiter(
+                                            line, header_tokens, string(":"));
+                    assert(check >= 1);
+                    if (check == 1) {
+                        headers_lines_ref[head_map_n++] =
+                                make_pair(header_tokens[0], header_tokens[1]);
+                    } else {
+                        string rest = header_tokens[1];
+                        for (int i = 1; i < check; i++) {
+                            rest += ":";
+                            rest += header_tokens[i + 1];
+                        }
+                        headers_lines_ref[head_map_n++] = make_pair(header_tokens[0], rest);
+                    }
                 }
-                scaned = endone ? scaned : cur + sizeof CRLF_;
+                scaned = endone ? scaned : cur + CRLF_.size();
+            } else {
+                if (endone) { break; }
             }
-            if (good_parsed || cur == size) {
-                // is a legal content and parsed rightly
-                buffer.consume(parse_size);
-            }
+            cur++;
         }
         parse_size = scaned;
     }
@@ -154,7 +173,11 @@ size_t HttpRequest::to_decode(Buffer& buffer) {
         version_ = str2Version(v_str);
         return;
     };
-    return try_decode_of(buffer, a_func, headers_lines_, version_, body_);
+    auto check = try_decode_of(buffer, a_func, headers_lines_, version_, body_);
+    if (check < 8) {
+        NOTDONE();
+    }
+    return check;
 }
 
 size_t HttpResponse::to_encode(Buffer& buffer) {
@@ -169,6 +192,7 @@ size_t HttpResponse::to_encode(Buffer& buffer) {
     if (!body_.empty()) {
         content += CRLF_;
         content += body_;
+        content += CRLF_;
     }
     buffer.write_to_buffer(content.c_str(), content.size());
     return content.size();
@@ -178,17 +202,20 @@ size_t HttpResponse::to_decode(Buffer& buffer) {
     auto a_func = [this](string line) {
         // init line
         std::stringstream ss;
-        string c_str, v_str;
+        string c_str1, v_str, c_str2;
         ss << line;
         ss >> v_str;
-        ss >> c_str;
-        c_str += " ";
-        ss >> c_str;
+        ss >> c_str1;
+        ss >> c_str2;
         version_ = str2Version(v_str);
-        statuscode_ = str2Status(c_str);
+        statuscode_ = str2Status(c_str1 + " " + c_str2);
         return;
     };
-    return try_decode_of(buffer, a_func, headers_lines_, version_, body_);
+    auto check = try_decode_of(buffer, a_func, headers_lines_, version_, body_);
+    if (check < 8) {
+        NOTDONE();
+    }
+    return check;
 }
 
 void HttpRequest::get_test_default_one() {
@@ -224,19 +251,23 @@ void HttpResponse::get_test_default_one() {
 HttpServer::HttpServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip)
     : tcp_server_(emwp, listen_ip) {
         tcp_server_.set_msg_callback([this](uint32_t seqno){
+                    LOG_DEBUG("httpserver msg callback");
                     auto this_con = tcp_server_.get_shared_tcpcon_ref_by_seqno(seqno);
-                    http_request_.to_decode(this_con->get_rb_ref());
+                    this_con->get_rb_ref().consume(
+                            http_request_.to_decode(this_con->get_rb_ref()));
                     pair<string, string> key = make_pair(
                             http_request_.get_method_str(),
                             http_request_.uri_);
+                    assert(!map_.empty());
                     auto found = map_.find(key);
                     if (found != map_.end()) {
                         auto& func_ref = map_[key];
                         func_ref(*this_con);
-                        } else {
+                        http_response_.to_encode(this_con->get_wb_ref());
+                    } else {
                         NOTDONE();
-                        }
-                        http_request_.swap(HttpRequest());
+                    }
+                    http_request_.swap(HttpRequest());
                 });
     }
 
@@ -249,33 +280,53 @@ HttpClient::HttpClient(EventManagerWrapper* emwp, Ipv4Addr local_ip,
     : tcp_client_(emwp, peer_ip, local_ip) {
     tcp_client_
         .set_tcpcon_after_connected_callback([this](TCPConnection& this_con) {
+            LOG_DEBUG("httpclient connect callback");
             auto& wb = this_con.get_wb_ref();
-            http_request_.to_encode(wb);
-            this_con.try_to_write();
+            auto check = http_request_.to_encode(wb);
+            auto check1 = this_con.to_write();
+            if (check != check1 || check == 0) { NOTDONE(); }
         })
         .set_msg_callback([this](uint32_t seqno) {
-            auto this_con = tcp_client_.get_shared_tcpcon_ref();
-            this_con->try_to_read();
-            http_response_.to_decode(this_con->get_rb_ref());
-            msg_collector_(http_response_.body_);
+            if (msg_collector_ && !reflector_) {
+                LOG_DEBUG("httpclient msg callback");
+                auto this_con = tcp_client_.get_shared_tcpcon_ref();
+                this_con->get_rb_ref().consume(
+                    http_response_.to_decode(this_con->get_rb_ref()));
+                msg_collector_(http_response_.body_);
+            } else if (reflector_ && !msg_collector_) {
+                NOTDONE();
+            } else {
+                NOTDONE();
+            }
         });
 }
 
-void HttpResponse::swap(HttpResponse&& other) {
-    std::swap(version_, other.version_);
-    std::swap(statuscode_, other.statuscode_);
-    headers_lines_.swap(other.headers_lines_);
-    body_.swap(other.body_);
-}
+    HttpClient& HttpClient::set_httpresponse_msg_collector(X_SF&& cb){
+        if (!msg_collector_&& !reflector_) {
+            msg_collector_ = std::move(cb);
+        }
+    }
+
+    HttpClient& HttpClient::set_httpresponse_reflector(X_RF&& hre_ref){
+        if (!msg_collector_ && !reflector_) {
+            reflector_ = std::move(hre_ref);
+        }
+    }
 
 void HttpRequest::swap(HttpRequest&& other) {
     uri_.swap(other.uri_);
     std::swap(version_, other.version_);
-    std::swap(version_, other.version_);
-    headers_lines_.swap(headers_lines_);
+    std::swap(method_, other.method_);
+    headers_lines_.swap(other.headers_lines_);
     body_.swap(other.body_);
 }
 
+    void HttpResponse::swap(HttpResponse &&other) {
+        body_.swap(other.body_);
+        std::swap(version_, other.version_);
+        std::swap(statuscode_, other.statuscode_);
+        headers_lines_.swap(other.headers_lines_);
+    }
 
 HttpClient& HttpClient::set_httprequest(HttpRequest&& http_request) {
     http_request_.swap(std::move(http_request));
@@ -289,8 +340,10 @@ HttpServer& HttpServer::set_httpresponse(HttpResponse&& http_response) {
 
 HttpServer& HttpServer::set_action_of(string m_str, string uri, TCPCallBack&& cb) {
     auto found = map_.find(make_pair(m_str, uri));
-    if (found != map_.end()) {
+    if (found == map_.end()) {
         map_[make_pair(m_str, uri)] = cb;
+    } else {
+        NOTDONE();
     }
     return *this;
 }

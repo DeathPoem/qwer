@@ -14,6 +14,7 @@ namespace my_http {
             }
             memset(readto, 0, sizeof readto);
             int require_size = rb.get_readable_bytes();
+            assert(require_size > 0);
             //LOG_DEBUG("in echo, read %d", require_size);
             rb.read_from_buffer(readto, require_size);
             auto consume_size = strlen(readto);

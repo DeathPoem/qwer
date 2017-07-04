@@ -61,32 +61,41 @@ namespace my_http {
 
     void epollwrapper::loop_once(time_ms_t time) {
         LOG_INFO("enter epollwrapper::loop_once loop timeout = %d milisec, now is %s", time, TimeStamp().init_stamp_of_now().tostring().c_str());
-        int ready = epoll_wait(epoll_instance_fd_, &*epoll_vec_.begin(), MaxEvents, time);
-        if (ready < 0) {
-            NOTDONE();
-        } else if (ready == 0) {
-            LOG_INFO("this epoll_wait return zero");
-        }
-        while (ready-- > 0) {
-            Channel* p_ch = static_cast<Channel*>(epoll_vec_[ready].data.ptr);
-            int active_event = epoll_vec_[ready].events;
-            if (p_ch) {
-                if (emp_ != nullptr) {
-                    if (active_event == Channel::get_readonly_event_flag()) {
-                        emp_->add_active_event(EventEnum::IORead, p_ch);
-                    } else if (active_event == Channel::get_writeonly_event_flag()) {
-                        emp_->add_active_event(EventEnum::IOWrite, p_ch);
-                    } else if (active_event & Channel::get_peer_shutdown_flag()) {
-                        emp_->add_active_event(EventEnum::PeerShutDown, p_ch);
+        bool complete_once = false;
+        while (!complete_once) {
+            int ready = epoll_wait(epoll_instance_fd_, &*epoll_vec_.begin(), MaxEvents, time);
+            if (ready < 0) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                ABORT("errno=%s", strerror(errno));
+            } else if (ready == 0) {
+                LOG_INFO("this epoll_wait return zero");
+            }
+            while (ready-- > 0) {
+                Channel* p_ch = static_cast<Channel*>(epoll_vec_[ready].data.ptr);
+                int active_event = epoll_vec_[ready].events;
+                if (p_ch) {
+                    if (emp_ != nullptr) {
+                        if (active_event == Channel::get_readonly_event_flag()) {
+                            emp_->add_active_event(EventEnum::IORead, p_ch);
+                        } else if (active_event == Channel::get_writeonly_event_flag()) {
+                            emp_->add_active_event(EventEnum::IOWrite, p_ch);
+                        } else if (active_event & Channel::get_peer_shutdown_flag()) {
+                            emp_->add_active_event(EventEnum::PeerShutDown, p_ch);
+                        } else if (active_event & Channel::get_err_flag()) {
+                            emp_->add_active_event(EventEnum::Error, p_ch);
+                        } else {
+                            NOTDONE();
+                        }
                     } else {
                         NOTDONE();
                     }
                 } else {
                     NOTDONE();
                 }
-            } else {
-                NOTDONE();
             }
+            complete_once = true;
         }
         emp_->handle_active_event();
     }

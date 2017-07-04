@@ -92,7 +92,7 @@ int splite_by_delimiter(ContainerType const& origin,
 
 using std::string;
 template <>
-int splite_by_delimiter(string const& origin, std::vector<string>& to_fill_vec,
+inline int splite_by_delimiter(string const& origin, std::vector<string>& to_fill_vec,
                         string const& delimiter) {
     assert(!delimiter.empty());
     std::vector<decltype(origin.begin())> founds;
@@ -129,16 +129,19 @@ private:
     HttpRequest http_request_;
     TCPServer tcp_server_;
 };
-
+using X_RF = std::function<void(HttpResponse const &)>;
+    using X_SF = std::function<void(string const &)>;
 class HttpClient : public noncopyable {
 public:
     HttpClient (EventManagerWrapper* emwp, Ipv4Addr local_ip, Ipv4Addr peer_ip);
     virtual ~HttpClient ();
     HttpClient& set_httprequest(HttpRequest&& http_request_r_ref);
-    HttpClient& set_httpresponse_msg_collector(std::function<void(string const &)>&& cb);
+    HttpClient& set_httpresponse_msg_collector(X_SF&& cb);   // this is for short TCP link
+    HttpClient& set_httpresponse_reflector(X_RF&& hre_ref);
 
 private:
-    std::function<void(string const &)> msg_collector_;
+    X_SF msg_collector_;
+    X_RF reflector_;
     HttpResponse http_response_;
     HttpRequest http_request_;
     TCPClient tcp_client_;
