@@ -129,9 +129,9 @@ TEST(test_case_3, test_event_loop_runat) {
     auto cb0 = [&outer](){ outer = "fucking awesome!"; };
     auto cb1 = [&another](){ another = "fucking asshole!"; };
     auto cb2 = [&other](){ other = "fucking!"; };
-    emw.run_at(2300, std::move(cb0));
-    emw.run_at(900, std::move(cb1));
-    emw.run_at(900, std::move(cb2));
+    emw.run_after(2300, std::move(cb0));
+    emw.run_after(900, std::move(cb1));
+    emw.run_after(900, std::move(cb2));
 
     for (int i : {1, 2, 3}) {
         SLOG_INFO("end of i =" << i);

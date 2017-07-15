@@ -248,57 +248,8 @@ void HttpResponse::get_test_default_one() {
             HTML_NEWLINE_;
 }
 
-HttpServer::HttpServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip)
-    : tcp_server_(emwp, listen_ip) {
-        tcp_server_.set_msg_callback([this](uint32_t seqno){
-                    LOG_DEBUG("httpserver msg callback");
-                    auto this_con = tcp_server_.get_shared_tcpcon_ref_by_seqno(seqno);
-                    this_con->get_rb_ref().consume(
-                            http_request_.to_decode(this_con->get_rb_ref()));
-                    pair<string, string> key = make_pair(
-                            http_request_.get_method_str(),
-                            http_request_.uri_);
-                    assert(!map_.empty());
-                    auto found = map_.find(key);
-                    if (found != map_.end()) {
-                        auto& func_ref = map_[key];
-                        func_ref(*this_con);
-                        http_response_.to_encode(this_con->get_wb_ref());
-                    } else {
-                        NOTDONE();
-                    }
-                    http_request_.swap(HttpRequest());
-                });
-    }
-
 string HttpRequest::get_method_str() {
     return Method2str(method_);
-}
-
-HttpClient::HttpClient(EventManagerWrapper* emwp, Ipv4Addr local_ip,
-                       Ipv4Addr peer_ip)
-    : tcp_client_(emwp, peer_ip, local_ip) {
-    tcp_client_
-        .set_tcpcon_after_connected_callback([this](TCPConnection& this_con) {
-            LOG_DEBUG("httpclient connect callback");
-            auto& wb = this_con.get_wb_ref();
-            auto check = http_request_.to_encode(wb);
-            auto check1 = this_con.to_write();
-            if (check != check1 || check == 0) { NOTDONE(); }
-        })
-        .set_msg_callback([this](uint32_t seqno) {
-            if (msg_collector_ && !reflector_) {
-                LOG_DEBUG("httpclient msg callback");
-                auto this_con = tcp_client_.get_shared_tcpcon_ref();
-                this_con->get_rb_ref().consume(
-                    http_response_.to_decode(this_con->get_rb_ref()));
-                msg_collector_(http_response_.body_);
-            } else if (reflector_ && !msg_collector_) {
-                NOTDONE();
-            } else {
-                NOTDONE();
-            }
-        });
 }
 
     HttpClient& HttpClient::set_httpresponse_msg_collector(X_SF&& cb){

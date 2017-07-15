@@ -10,7 +10,9 @@
 #include "facility.h"
 
 namespace my_http {
-    // actually, we can use SyncQueue
+
+    //! @note actually, we can use SyncQueue
+    // TODO delete this
 template<typename T>
     class ThreadSafeQueue
     {
@@ -29,6 +31,8 @@ template<typename T>
         std::queue<T> queue_;
 
     };
+
+//! @brief A thread safe queue
 template <typename TaskT>
 class SyncQueue {
 public:
@@ -54,14 +58,16 @@ using std::chrono_literals::operator""ms;
 
 class ThreadPool {
 public:
-    ThreadPool(int threadsize, int tasksize);
+    //! @brief the init behavior is every threads in that threadpool wait for cv_ until start().
+    ThreadPool(int threadsize = ThreadPool::get_default_threadpool_size(), int tasksize = 1000);
     virtual ~ThreadPool();
+    //! @brief notify every threads to wake up and work
     void start();
     void stop_w();
     bool add_task(CallBack&& cb);
     size_t get_task_size() const;
     size_t get_thread_size() const;
-
+    static size_t get_default_threadpool_size();
 private:
     void stop();
     SyncQueue<CallBack> tasks_;

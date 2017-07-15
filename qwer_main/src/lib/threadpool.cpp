@@ -23,6 +23,10 @@ ThreadPool::ThreadPool(int threadsize, int tasksize) : tasks_(tasksize), is_runn
     }
 }
 
+size_t ThreadPool::get_default_threadpool_size() {
+    return std::thread::hardware_concurrency() + 1;
+}
+
 ThreadPool::~ThreadPool() {
     std::call_once(once_, [this]() { stop(); });
 }

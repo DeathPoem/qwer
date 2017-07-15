@@ -34,11 +34,11 @@ TEST(test_case_2, test_thread_pool) {
     using my_http::ThreadPool;
     using my_http::Logger;
     using std::chrono_literals::operator""ms;
-    auto hc = std::thread::hardware_concurrency();
+    auto hc = ThreadPool::get_default_threadpool_size();
     LOG_SET_FILE("");
     LOG_SET_LEVEL("INFO");
     LOG_INFO("hardware_concurrency() get hc = %d", hc);
-    ThreadPool threadpool_ob(hc + 1, 1000);
+    ThreadPool threadpool_ob(hc, 1000);
     threadpool_ob.add_task([]() {
         std::this_thread::sleep_for(2ms);
         LOG_INFO("in thread task1");

@@ -19,6 +19,8 @@ namespace my_http {
 
 namespace detail {
 int create_socketfd();
+//TODO
+// tcp keep alive and tcp nodelay
 } /* detail */
 
 class TCPConnection;
@@ -58,9 +60,9 @@ public:
     void epoll_and_accept(time_ms_t after = 0);
     TCPSTATE get_state();
 
-private:
+protected:
     void listen_it_and_accept();
-    void handle_epoll_readable();
+    virtual void handle_epoll_readable();   //!< an dirty hack to implement MultiAcceptor
     TCPSTATE tcpstate_;
     EventManager* const
         emp_;  // a tcp Acceptor won't live longer than EventManager

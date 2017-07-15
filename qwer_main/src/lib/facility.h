@@ -106,6 +106,7 @@ using std::get;
 using std::endl;
 using std::map;
 using std::bind;
+using std::move;
 using std::function;
 using std::unique_ptr;
 using std::unordered_set;
@@ -124,7 +125,8 @@ using std::unordered_map;
 using std::to_string;
 using CallBack = std::function<void()>;
 using unique_id_t = uint32_t;
-using time_ms_t = int;
+using time_ms_t = size_t;
+using FileDescriptorType = int;
 
     struct TimeStamp {
         TimeStamp();

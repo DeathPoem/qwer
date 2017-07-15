@@ -56,7 +56,7 @@ namespace my_http {
             void loop();
             //void register_event(Channel* p_ch, CallBack&& cb);
             void register_event(uint32_t event, Channel* p_ch, CallBack&& cb);
-            TimerId run_at(time_ms_t para_t, CallBack&& cb);    // after
+            TimerId run_after(time_ms_t para_t, CallBack &&cb);    // after
             void exit();
             EventManager* get_pimpl();
         private:

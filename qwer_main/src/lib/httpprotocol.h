@@ -129,8 +129,11 @@ private:
     HttpRequest http_request_;
     TCPServer tcp_server_;
 };
+
 using X_RF = std::function<void(HttpResponse const &)>;
     using X_SF = std::function<void(string const &)>;
+
+template <typename TCPClientClass>
 class HttpClient : public noncopyable {
 public:
     HttpClient (EventManagerWrapper* emwp, Ipv4Addr local_ip, Ipv4Addr peer_ip);
@@ -144,8 +147,13 @@ private:
     X_RF reflector_;
     HttpResponse http_response_;
     HttpRequest http_request_;
-    TCPClient tcp_client_;
+    unique_ptr<TCPClientClass> tcp_client_p_;
 };
+
+    template <typename TCPClientClass>
+    HttpClient::HttpClient(EventManagerWrapper *emwp, Ipv4Addr local_ip, Ipv4Addr peer_ip) {
+
+    }
 } /* my_http */
 
 #endif /* ifndef HTTPPROTOCOL_H */

@@ -664,11 +664,9 @@ TCPClient::~TCPClient() {
     LOG_INFO("TCPClient destruct");
     switch (get_state()) {
         case TCPSTATE::Peerclosed : {
-
             break;
         }
         case TCPSTATE::Localclosed : {
-//TODO
             break;
         }
         default: {
