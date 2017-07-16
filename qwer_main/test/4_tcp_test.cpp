@@ -321,16 +321,15 @@ void x_client_thread_function() {
     tcpclient.set_tcpcon_after_connected_callback([](TCPConnection& this_con){
                 LOG_DEBUG("write to server");
                 this_con.write_by_string("fucking awesome!");
-                }).set_msg_callback([&tcpclient, &write_to_server, &read_from_server](uint32_t seqno) {
+                }).set_tcp_callback([&tcpclient, &write_to_server, &read_from_server](TCPConnection& this_con) {
                         LOG_DEBUG("read from server, ");
-                        auto this_con = tcpclient.get_shared_tcpcon_ref();
-                        if (this_con->get_state() == TCPSTATE::Localclosed) {
+                        if (this_con.get_state() == TCPSTATE::Localclosed) {
                             NOTDONE();
                         }
-                        string re = this_con->read_by_string();
+                        string re = this_con.read_by_string();
                         read_from_server = re == "" ? read_from_server : re;
-                        this_con->get_rb_ref().consume(read_from_server.size());
-                        this_con->local_close();
+                        this_con.get_rb_ref().consume(read_from_server.size());
+                        this_con.local_close();
                     });
     for (int i = 0; i < 10; ++i) {
         emw.loop_once(500);

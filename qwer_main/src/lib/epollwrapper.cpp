@@ -13,7 +13,6 @@ namespace my_http {
     epollwrapper::~epollwrapper() {}
 
     void epollwrapper::Init(int size) {
-        LOG_INFO("here");
         epoll_instance_fd_ = ::epoll_create(size);
         if (epoll_instance_fd_ < 0) {
             NOTDONE();
@@ -21,7 +20,6 @@ namespace my_http {
     }
 
     void epollwrapper::AddChannel(Channel* p_ch) {
-        LOG_INFO("here");
         struct epoll_event epoll_event_ob;
         memset(&epoll_event_ob, 0, sizeof(epoll_event_ob));
         epoll_event_ob.events = p_ch->get_events();
@@ -39,7 +37,6 @@ namespace my_http {
     }
 
     void epollwrapper::ModChannel(Channel* p_ch) {
-        LOG_INFO("here");
         struct epoll_event epoll_event_ob;
         memset(&epoll_event_ob, 0, sizeof(epoll_event_ob));
         epoll_event_ob.events = p_ch->get_events();
@@ -52,7 +49,6 @@ namespace my_http {
 
     // Channel object is owned by TCPconnection ob
     void epollwrapper::DelChannel(Channel* p_ch) {
-        LOG_INFO("here");
         auto check = ::epoll_ctl(epoll_instance_fd_, EPOLL_CTL_DEL, p_ch->get_fd(), NULL);
         if (check != 0) {
             LOG_ERROR("fail to delchannel");

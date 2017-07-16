@@ -55,7 +55,10 @@ inline std::string get_time_of_now();
 
 #define log_if_level(level, ...) \
     if (static_cast<uint32_t>(level) - 1 < static_cast<uint32_t>(Logger::get_logger().get_log_level())) { \
-        Logger::get_logger().log_v(static_cast<uint32_t>(level), __FILE__, std::to_string(__LINE__).c_str(), my_http::get_time_of_now().c_str(), __VA_ARGS__); \
+        auto id = std::this_thread::get_id();\
+        std::stringstream ss;\
+        ss << __LINE__ << ", thread-id is " << id;\
+        Logger::get_logger().log_v(static_cast<uint32_t>(level), __FILE__, ss.str().c_str(), my_http::get_time_of_now().c_str(), __VA_ARGS__); \
     }
 
 #define LOG_ERROR(...) log_if_level(Logger::LogLevel::ERROR, __VA_ARGS__)

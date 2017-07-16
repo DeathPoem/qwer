@@ -11,7 +11,7 @@ namespace my_http {
 template <typename T>
 class AcceptedQueue : private SyncQueue<T> {  //!< why use private :https://stackoverflow.com/questions/656224/when-should-i-use-c-private-inheritance/675451#675451
 public:
-    AcceptedQueue(size_t workersize);
+    AcceptedQueue(size_t workersize = ThreadPool::get_default_threadpool_size() - 1); //!< minus one is because one thread would be acceptor_routine
     virtual ~AcceptedQueue();
     bool push_one(T&& one);
     vector<T> get_one();
@@ -27,7 +27,7 @@ template <typename T>
     AcceptedQueue<T>::AcceptedQueue(size_t workersize) : 
         workersize_(workersize), 
         cur_(0),
-        SyncQueue<shared_ptr<T>>(ThreadPool::get_default_threadpool_size() - 1) {   // minus one is because one thread would be acceptor_routine
+        SyncQueue<T>() {
 
     }
 
@@ -36,8 +36,12 @@ template <typename T>
 
 template <typename T>
     bool AcceptedQueue<T>::push_one(T&& one) {
-        cur_ += 1;
-        return try_push(move(one), 5);
+        cur_++;
+        if (try_push(move(one), 5)) {
+            return true;
+        } else {
+            NOTDONE();
+        }
     }
 
 template <typename T>
@@ -59,7 +63,7 @@ template <typename T>
         return cur_ > 0 ? (cur_ / workersize_) + 1 : 0;
     }
 
-using MoveFDCallBack = std::function<void(pair<FileDescriptorType, Ipv4Addr>)>;
+using MoveFDCallBack = std::function<void(pair<FileDescriptorType, Ipv4Addr>&&)>;
 namespace detail {
     
 //! @brief an oop principle broke case, but I still doing so for convenience. A more elegant and orthodox method is to abstract a base class for MultiAcceptor and SingleThreadAcceptor to derive.
@@ -68,8 +72,10 @@ public:
     MultiAcceptorImp(EventManagerWrapper* emwp);
     virtual ~MultiAcceptorImp ();
     MultiAcceptorImp& set_accept_readable_callback(MoveFDCallBack&& cb);
+    void epoll_and_accept(time_ms_t after = 0) override;
 
 private:
+    void listen_it_and_accept() override;
     /* data */
     void handle_epoll_readable() override;
     MoveFDCallBack movecb_x_;
@@ -86,31 +92,37 @@ public:
     MultiAcceptor& set_listen_addr(Ipv4Addr addr);
     MultiAcceptor& set_accept_readable_callback(MoveFDCallBack&& cb);
     void epoll_and_accept(time_ms_t after = 0);
-    TCPSTATE get_state();
+    //TCPSTATE get_state();
+    using MultiAcceptorImp::get_state;
 private:
     /* data */
 };
 
 class MultiServer { //!< a multithread safe class
 public:
-    MultiServer (size_t idle_duration = 100, Ipv4Addr listen_ip = Ipv4Addr(Ipv4Addr::host2ip_str("local_host"), 8001));
+    MultiServer (size_t idle_duration = 100, Ipv4Addr listen_ip = Ipv4Addr(Ipv4Addr::host2ip_str("localhost"), 8001));
     virtual ~MultiServer ();
-    void AcceptorRoutine(); //!< to guanrantee MsgServerRoutineDetail invoke once
-    void MsgServerRoutine();
+    void AcceptorRoutine(vector<CallBack>& stop_vec); //!< to guanrantee MsgServerRoutineDetail invoke once
+    void MsgServerRoutine(vector<CallBack>& stop_vec);
     MultiServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
-    MultiServer& set_msg_callback(MsgCallBack&& cb);
+    MultiServer& set_tcp_callback(TCPCallBack && cb);
+    void ThreadPoolStart();
+    void Exit();
 private:
+    void MsgServerRoutineDetail(vector<CallBack>& stop_vec);
+    void AcceptorRoutineDetail(vector<CallBack>& stop_vec);
+    bool FetchOne(vector<pair<FileDescriptorType, Ipv4Addr>>& toit);
     const Ipv4Addr listen_ip_;
     const size_t idle_duration_;
+    ThreadPool thread_pool_;
     atomic<bool> is_accepting_;
     mutex syncmutex_;
     condition_variable synccv_;
-    void MsgServerRoutineDetail();
-    void AcceptorRoutineDetail();
-    bool FetchOne(vector<pair<FileDescriptorType, Ipv4Addr>>& toit);
-    unique_ptr<AcceptedQueue<pair<FileDescriptorType, Ipv4Addr>>> p_queue_;
+    using Qtype = pair<FileDescriptorType, Ipv4Addr>;
+    unique_ptr<AcceptedQueue<Qtype>> p_queue_;
     MsgResponserCallBack msg_responser_cb_;
-    MsgCallBack msg_cb_;
+    TCPCallBack tcp_cb_;
+    CallBack pool_stop_cb_;
 };
 
 } /* my_http */

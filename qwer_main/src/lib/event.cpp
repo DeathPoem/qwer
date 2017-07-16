@@ -68,18 +68,23 @@ namespace my_http {
         io_demultiplexer_->loop_once(timeout);
     }
 
-    TimerId EventManager::run_at(time_ms_t para_t, CallBack&& cb) {
+    TimerId EventManager::run_at(time_ms_t para_t, CallBack&& cb, time_ms_t interval) {
         LOG_INFO("run at");
-        return run_after(para_t, std::move(cb));
+        return run_after(para_t, std::move(cb), interval);
     }
 
-    TimerId EventManager::run_after(time_ms_t para_t, CallBack&& cb) {
-        LOG_INFO("here");
-        TimeStamp when;
-        when.init_stamp_of_now().add_stamp_by_mill(para_t);
-        auto ret = my_timer_queue_->add_timer(when, move(cb));
-        LOG_INFO("here");
-        return ret;
+    TimerId EventManager::run_after(time_ms_t para_t, CallBack&& cb, time_ms_t interval) {
+        if (interval == 0) {
+            TimeStamp when;
+            when.init_stamp_of_now().add_stamp_by_mill(para_t);
+            auto ret = my_timer_queue_->add_timer(when, move(cb));
+            return ret;
+        } else {
+            TimeStamp when;
+            when.init_stamp_of_now().add_stamp_by_mill(para_t);
+            auto ret = my_timer_queue_->add_timer(when, move(cb));
+            return ret;
+        }
     }
 
     void EventManager::exit() {
@@ -88,9 +93,8 @@ namespace my_http {
     }
 
     void EventManager::loop() {
-        LOG_INFO("here");
         while (!exit_) {
-            io_demultiplexer_->loop_once(1000);
+            io_demultiplexer_->loop_once(300);
         }
     }
     
@@ -130,8 +134,8 @@ namespace my_http {
         pimpl_->start_up();
     }
 
-    TimerId EventManagerWrapper::run_after(time_ms_t para_t, CallBack &&cb) {
-        auto ret = pimpl_->run_at(para_t, std::move(cb));
+    TimerId EventManagerWrapper::run_after(time_ms_t para_t, CallBack &&cb, time_ms_t interval) {
+        auto ret = pimpl_->run_at(para_t, std::move(cb), interval);
         return ret;
     }
 

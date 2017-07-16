@@ -1,4 +1,5 @@
 #include "multithread_version.h"
+#include "event.h"
 
 namespace my_http {
 
@@ -40,6 +41,31 @@ detail::MultiAcceptorImp::set_accept_readable_callback(MoveFDCallBack&& cb) {
     return *this;
 }
 
+    void detail::MultiAcceptorImp::listen_it_and_accept() {
+        listened_ip_.ip_bind_socketfd(listened_socket_->get_fd());
+        auto check = ::listen(listened_socket_->get_fd(), SOMAXCONN);
+        if (check != 0) {
+            NOTDONE();
+        }
+        tcpstate_ = TCPSTATE::Listening;
+        if (movecb_x_ != nullptr) {
+            LOG_INFO("acceptor register accept epoll readable cb");
+            emp_->register_event(
+                    Channel::get_readonly_event_flag(), listened_socket_.get(),
+                    [this]() {
+                        SLOG_INFO("in Acceptor::accept callback, accepted_count_ ="
+                                          << accepted_count_++);
+                        handle_epoll_readable();
+                    });
+        } else {
+            NOTDONE();
+        }
+    }
+
+    void detail::MultiAcceptorImp::epoll_and_accept(time_ms_t after) {
+        emp_->run_after(after, std::bind(&MultiAcceptorImp::listen_it_and_accept, this));
+    }
+
 MultiAcceptor::MultiAcceptor(EventManagerWrapper* emwp) : MultiAcceptorImp(emwp) {
 
 }
@@ -63,26 +89,27 @@ void MultiAcceptor::epoll_and_accept(time_ms_t after) {
     MultiAcceptorImp::epoll_and_accept(after);
 }
 
-TCPSTATE MultiAcceptor::get_state() { return MultiAcceptorImp::get_state(); }
+//TCPSTATE MultiAcceptor::get_state() { return MultiAcceporImp::get_state(); }
 
 MultiServer::MultiServer(size_t idle, Ipv4Addr listen_ip) 
     : is_accepting_(false), 
     idle_duration_(idle),
-    listen_ip_(listen_ip) {
+    listen_ip_(listen_ip),
+p_queue_(new AcceptedQueue<Qtype>()){
 
     }
 
 MultiServer::~MultiServer() {}
 
-void MultiServer::AcceptorRoutine() {
+void MultiServer::AcceptorRoutine(vector<CallBack>& stop_vec) {
     if (is_accepting_ == false) {
-        AcceptorRoutineDetail();
+        AcceptorRoutineDetail(stop_vec);
     } else {
         NOTDONE();
     }
 }
 
-void MultiServer::AcceptorRoutineDetail() {
+void MultiServer::AcceptorRoutineDetail(vector<CallBack>& stop_vec) {
     std::unique_lock<mutex> lk(syncmutex_);
     is_accepting_ = true;
     EventManagerWrapper emw;
@@ -90,42 +117,48 @@ void MultiServer::AcceptorRoutineDetail() {
     x_acceptor
         .set_listen_addr(listen_ip_)
         .set_accept_readable_callback(
-            [this](pair<FileDescriptorType, Ipv4Addr> p) { p_queue_->push_one(move(p)); })
+            [this](pair<FileDescriptorType, Ipv4Addr>&& p) { p_queue_->push_one(move(p)); })
         .epoll_and_accept();
     lk.unlock();
     synccv_.notify_all();
+    stop_vec.push_back([&emw](){
+        emw.exit();
+    });
     emw.loop();
 }
 
-void MultiServer::MsgServerRoutineDetail() {
+void MultiServer::MsgServerRoutineDetail(vector<CallBack>& stop_vec) {
     std::unique_lock<mutex> lk(syncmutex_);
     synccv_.wait(lk, [this](){ return is_accepting_ == true; });
     EventManagerWrapper emw;
     size_t seqno = 0;
     map<size_t, shared_ptr<TCPConnection>> tcpcon_map;
-    std::function<void()> fetch_routine = [this, &tcpcon_map, &emw, &fetch_routine](){
-        vector<FileDescriptorType, Ipv4Addr> newpairs;
+    std::function<void()> fetch_routine = [this, &tcpcon_map, &emw, &fetch_routine, &seqno](){
+        vector<pair<FileDescriptorType, Ipv4Addr>> newpairs;
         if (FetchOne(newpairs)) {
             for (auto newpair : newpairs) {
                 // generate tcp con and set epoll
+                auto fd = get<0>(newpair);
+                auto ip = get<1>(newpair);
                 shared_ptr<TCPConnection> shared_p_tc( 
-                    new TCPConnection(emw, get<0>(newpair), listen_ip_, get<1>(newpair)));
+                    new TCPConnection(emw.get_pimpl(), fd, listen_ip_, ip));
                 seqno++;
                 tcpcon_map[seqno] = shared_p_tc;
                 shared_p_tc->set_seqno_of_server(seqno);
-                shared_p_tc->set_normal_readable_callback([this, seqno - 1](TCPConnection& this_con) {
+                shared_p_tc->set_normal_readable_callback([this, seqno](TCPConnection& this_con) {
+                    LOG_DEBUG("one readable callback");
                     auto check = this_con.to_read();
                     if (check >= 1) {
-                        if (msg_responser_cb_ != nullptr && msg_cb_ == nullptr) {
+                        if (msg_responser_cb_ != nullptr && tcp_cb_ == nullptr) {
                             auto& rbuffer = this_con.get_rb_ref();
                             auto& wbuffer = this_con.get_wb_ref();
-                            msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
+                            msg_responser_cb_(seqno, rbuffer, wbuffer,
                                               this_con.get_bigfilesendcb());
                             auto check1 = this_con.to_write();
                             LOG_INFO("server respond %d bytes", check1);
-                        } else if (msg_cb_ != nullptr &&
+                        } else if (tcp_cb_ != nullptr &&
                                    msg_responser_cb_ == nullptr) {
-                            msg_cb_(seqno_tmp);
+                            tcp_cb_(this_con); // user can't get this_con through this
                             auto check1 = this_con.to_write();
                             LOG_INFO("server respond %d bytes", check1);
                         } else {
@@ -140,7 +173,8 @@ void MultiServer::MsgServerRoutineDetail() {
                         } else if (this_con.get_state() == TCPSTATE::Localclosed){
                             NOTDONE();
                         } else {
-                            this_con.local_close();
+                            LOG_ERROR("???");
+                            //this_con.local_close();
                         }
                     }
                 })
@@ -158,21 +192,22 @@ void MultiServer::MsgServerRoutineDetail() {
                 .epoll_and_conmunicate();
             }
         }
-        emw.run_after(idle_duration, fetch_routine);
     };
-    emw.run_after(0, fetch_routine);
+    emw.run_after(100, move(fetch_routine), idle_duration_);
+    stop_vec.push_back([&emw](){
+        emw.exit();
+    });
+    emw.loop();
 }
 
-void MultiServer::MsgServerRoutine() {
-    unique_lock<mutex> lk(syncmutex_);
-    synccv_.wait(lk, [](){
-                if (true) {
-                    return true;
-                }
-            });
+void MultiServer::MsgServerRoutine(vector<CallBack>& stop_vec) {
+    std::unique_lock<mutex> lk(syncmutex_);
+    synccv_.wait(lk, [this](){ if (is_accepting_ == true) { return true; } });
+    lk.unlock();
+    MsgServerRoutineDetail(stop_vec);
 }
 
-bool MultiServer::FetchOne(vector<FileDescriptorType>& toit) {
+bool MultiServer::FetchOne(vector<pair<FileDescriptorType, Ipv4Addr>>& toit) {
     auto ret = p_queue_->get_one();
     if (ret.empty()) {
         return false;
@@ -182,14 +217,39 @@ bool MultiServer::FetchOne(vector<FileDescriptorType>& toit) {
     }
 }
 
-MultiServer& MultiServer::set_msg_callback(MsgCallBack&& cb) {
-    msg_cb_ = std::move(cb);
+MultiServer& MultiServer::set_tcp_callback(TCPCallBack && cb) {
+    tcp_cb_ = std::move(cb);
     return *this;
 }
 
 MultiServer& MultiServer::set_msg_responser_callback(MsgResponserCallBack&& cb) {
     msg_responser_cb_ = std::move(cb);
     return *this;
+}
+
+void MultiServer::ThreadPoolStart() {
+    if (ThreadPool::get_default_threadpool_size() > 2) {
+        //auto amount = ThreadPool::get_default_threadpool_size();
+        int amount = 2;
+        vector<CallBack> pool_stop_cb_vec;
+        thread_pool_.add_task(std::bind(&MultiServer::AcceptorRoutine, this, pool_stop_cb_vec));
+        while (--amount > 0) {
+            thread_pool_.add_task(std::bind(&MultiServer::MsgServerRoutine, this, pool_stop_cb_vec));
+        }
+        pool_stop_cb_ = [&](){
+            for (auto cb : pool_stop_cb_vec) {
+                cb();
+            }
+        };
+        thread_pool_.start();   // threads would block at loop()
+    } else {
+        NOTDONE();
+    }
+}
+
+void MultiServer::Exit() {
+    thread_pool_.stop_w();
+    pool_stop_cb_();
 }
 
 } /* my_http  */

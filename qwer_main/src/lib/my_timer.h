@@ -11,14 +11,17 @@ namespace my_http {
 
     class Timer : private noncopyable {
         public:
-            Timer (TimeStamp&& when, CallBack&& cb, unique_id_t seqno);
+            Timer (TimeStamp&& when, CallBack&& cb, unique_id_t seqno, time_ms_t interval);
             virtual ~Timer ();
             Timer(Timer&& other);
             Timer& operator=(Timer&& other);
             TimerId get_timerid();
             void do_cb();
+            bool is_period();
+            void to_next_time_if_period();
 
         private:
+            time_ms_t interval_;
             TimerId timerid_;
             CallBack cb_;
     };
@@ -35,7 +38,7 @@ namespace my_http {
         public:
             TimerQueue (EventManager& ref_em);
             virtual ~TimerQueue ();
-            TimerId add_timer(TimeStamp when, CallBack&& cb);
+            TimerId add_timer(TimeStamp when, CallBack&& cb, time_ms_t interval = 0);
             void cancel_timer(TimerId);
 
         private:

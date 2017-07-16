@@ -495,16 +495,16 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                     TCPConnection& this_con) {
                     auto check = this_con.to_read();
                     if (check >= 1) {
-                        if (msg_responser_cb_ != nullptr && msg_cb_ == nullptr) {
+                        if (msg_responser_cb_ != nullptr && tcp_cb_ == nullptr) {
                             auto& rbuffer = this_con.get_rb_ref();
                             auto& wbuffer = this_con.get_wb_ref();
                             msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
                                               this_con.get_bigfilesendcb());
                             auto check1 = this_con.to_write();
                             LOG_INFO("server respond %d bytes", check1);
-                        } else if (msg_cb_ != nullptr &&
+                        } else if (tcp_cb_ != nullptr &&
                                    msg_responser_cb_ == nullptr) {
-                            msg_cb_(seqno_tmp);
+                            tcp_cb_(this_con);
                             auto check1 = this_con.to_write();
                             LOG_INFO("server respond %d bytes", check1);
                         } else {
@@ -520,6 +520,7 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                         } else if (this_con.get_state() == TCPSTATE::Localclosed){
                             NOTDONE();
                         } else {
+                            LOG_ERROR("??");
                             this_con.local_close();
                         }
                     }
@@ -579,8 +580,8 @@ TCPServer& TCPServer::set_msg_responser_callback(MsgResponserCallBack&& cb) {
     return *this;
 }
 
-TCPServer& TCPServer::set_msg_callback(MsgCallBack&& cb) {
-    msg_cb_ = std::move(cb);
+TCPServer& TCPServer::set_tcp_callback(TCPCallBack && cb) {
+    tcp_cb_ = std::move(cb);
     return *this;
 }
 
@@ -629,15 +630,15 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip,
                             TCPConnection& this_con) {
                         auto check = this_con.to_read();
                         if (check >= 1) {
-                            if (msg_responser_cb_ != nullptr && msg_cb_ == nullptr) {
+                            if (msg_responser_cb_ != nullptr && tcp_cb_ == nullptr) {
                                 auto& rbuffer = this_con.get_rb_ref();
                                 auto& wbuffer = this_con.get_wb_ref();
                                 msg_responser_cb_(seqno_tmp, rbuffer, wbuffer,
                                                   this_con.get_bigfilesendcb());
                                 this_con.to_write();
-                            } else if (msg_cb_ != nullptr &&
+                            } else if (tcp_cb_ != nullptr &&
                                        msg_responser_cb_ == nullptr) {
-                                msg_cb_(seqno_tmp);
+                                tcp_cb_(this_con);
                                 this_con.to_write();
                             } else {
                                 ABORT(
@@ -691,8 +692,8 @@ TCPClient& TCPClient::set_msg_responser_callback(MsgResponserCallBack&& cb) {
     return *this;
 }
 
-TCPClient& TCPClient::set_msg_callback(MsgCallBack&& cb) {
-    msg_cb_ = std::move(cb);
+TCPClient& TCPClient::set_tcp_callback(TCPCallBack && cb) {
+    tcp_cb_ = std::move(cb);
     return *this;
 }
 

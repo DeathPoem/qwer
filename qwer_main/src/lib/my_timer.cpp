@@ -7,12 +7,26 @@
 
 namespace my_http {
 
-    Timer::Timer(TimeStamp&& when, CallBack&& cb, unique_id_t seqno) : cb_(cb) {
+    Timer::Timer(TimeStamp&& when, CallBack&& cb, unique_id_t seqno, time_ms_t interval) : cb_(cb), interval_(interval) {
         timerid_.alarm_time_ = when;
         timerid_.seqno_ = seqno;
     }
 
     Timer::~Timer() {}
+
+    bool Timer::is_period() {
+        return interval_ > 0;
+    }
+
+    void Timer::to_next_time_if_period() {
+        if (is_period()) {
+            TimeStamp when;
+            when.init_stamp_of_now().add_stamp_by_mill(interval_);
+            timerid_.alarm_time_ = when;
+        } else {
+            ABORT("no interval");
+        }
+    }
 
     Timer::Timer(Timer&&  other) : timerid_(std::move(other.timerid_)),
     cb_(std::move(other.cb_)) { }
@@ -55,13 +69,13 @@ namespace my_http {
         return std::move(ts);
     }
 
-    TimerId TimerQueue::add_timer(TimeStamp when, CallBack&& cb) {
+    TimerId TimerQueue::add_timer(TimeStamp when, CallBack&& cb, time_ms_t interval) {
         LOG_INFO("here");
         if (timer_vec_.empty()) {
             LOG_INFO("init timer and register it");
             init_timerfd_iodemultiplex();
         }
-        timer_vec_.emplace_back(std::move(when), std::move(cb), cur_seqence_number_++);
+        timer_vec_.emplace_back(std::move(when), std::move(cb), cur_seqence_number_++, interval);
         auto id = timer_vec_.back().get_timerid();
         after_add_new_timer(id);
         return id;
@@ -87,7 +101,12 @@ namespace my_http {
         // remove timer in timer_vec_
         for (auto id : to_erase_timerid) {
             auto found = find_if(timer_vec_.begin(), timer_vec_.end(), [&id](Timer& timer){ return timer.get_timerid() == id; });
-            timer_vec_.erase(found);
+            if (found->is_period()) {
+                found->to_next_time_if_period();
+                timerid_not_active.push(found->get_timerid());
+            } else {
+                timer_vec_.erase(found);
+            }
         }
         modify_timerfd_next_time();
     }

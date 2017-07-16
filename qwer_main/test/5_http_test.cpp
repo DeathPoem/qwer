@@ -14,7 +14,7 @@ void x_client_thread() {
     string outer;
     HttpRequest x_http_request;
     x_http_request.get_test_default_one();
-    HttpClient httpclient(&emw, 
+    HttpClient<TCPClient> httpclient(&emw, 
             Ipv4Addr(Ipv4Addr::host2ip_str("localhost"), 9214),
             Ipv4Addr(Ipv4Addr::host2ip_str("localhost"), 8000));
     httpclient.set_httprequest(std::move(x_http_request))
@@ -31,7 +31,7 @@ void x_server_thread() {
     EventManagerWrapper emw;
     HttpResponse x_http_response;
     x_http_response.get_test_default_one();
-    HttpServer httpserver(&emw, 
+    HttpServer<TCPServer> httpserver(&emw, 
             Ipv4Addr(Ipv4Addr::host2ip_str("localhost"), 8000));
     httpserver.set_action_of("Get", "/hello.html", [&httpserver](TCPConnection& this_con){
                 LOG_DEBUG("server : receive Get request");

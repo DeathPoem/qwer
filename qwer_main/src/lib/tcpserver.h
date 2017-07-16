@@ -42,8 +42,8 @@ enum class TCPSTATE {
 std::ostream& operator<<(std::ostream& os, TCPSTATE state);
 
 using BigFileSendCallBack = std::function<void(string)>;    // this would invoke sendfile() systemcall for large file like pdf to reduce memory copy and effective performance, string would be used to get the full path of file.
-using MsgResponserCallBack = std::function<void(uint32_t, Buffer&, Buffer&, BigFileSendCallBack&&)>;
-using MsgCallBack = std::function<void(uint32_t)>;
+using MsgResponserCallBack = std::function<void(uint32_t, Buffer&, Buffer&, BigFileSendCallBack&&)>;    //!< you should read content of rb and write your response into wb, then consume it. using seqno to get reference of this_con.
+using MsgCallBack = std::function<void(uint32_t)>;  //!< see MsgResponserCallBack
 using SizeCallBack = std::function<size_t()>;
 using GetSeqnoCallBack = std::function<void(uint32_t)>;
 using MoveTCPConnectionCallBack =
@@ -57,11 +57,11 @@ public:
     virtual ~Acceptor();
     Acceptor& set_listen_addr(Ipv4Addr addr);
     Acceptor& set_accept_readable_callback(MoveTCPConnectionCallBack&& cb);
-    void epoll_and_accept(time_ms_t after = 0);
+    virtual void epoll_and_accept(time_ms_t after = 0);
     TCPSTATE get_state();
 
 protected:
-    void listen_it_and_accept();
+    virtual void listen_it_and_accept();
     virtual void handle_epoll_readable();   //!< an dirty hack to implement MultiAcceptor
     TCPSTATE tcpstate_;
     EventManager* const
@@ -157,7 +157,7 @@ public:
     TCPServer& set_accept_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb); // this interface is not essential
     // provide a interface to let outside code to respond, one of following should be used
     TCPServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
-    TCPServer& set_msg_callback(MsgCallBack&& cb);
+    TCPServer& set_tcp_callback(TCPCallBack && cb);
     shared_ptr<TCPConnection>& get_shared_tcpcon_ref_by_seqno(uint32_t seqno);
     TCPSTATE get_state();
     void remove_tcpcon_by_seqno(uint32_t);
@@ -165,7 +165,7 @@ private:
     TCPCallBack after_connected_;
     GetSeqnoCallBack seqno_cb_;
     MsgResponserCallBack msg_responser_cb_;
-    MsgCallBack msg_cb_;
+    TCPCallBack tcp_cb_;
     const int maxtcpcon_;
     EventManager* const emp_;
     const Ipv4Addr listen_ip_;
@@ -181,7 +181,7 @@ public:
     TCPClient& set_tcpcon_after_connected_callback(TCPCallBack&& cb);
     TCPClient& set_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb);
     TCPClient& set_msg_responser_callback(MsgResponserCallBack&& cb);
-    TCPClient& set_msg_callback(MsgCallBack&& cb);
+    TCPClient& set_tcp_callback(TCPCallBack && cb);
     shared_ptr<TCPConnection>& get_shared_tcpcon_ref();
     TCPSTATE get_state();
 private:
@@ -189,7 +189,7 @@ private:
     TCPCallBack after_connected_;
     GetSeqnoCallBack seqno_cb_;
     MsgResponserCallBack msg_responser_cb_;
-    MsgCallBack msg_cb_;
+    TCPCallBack  tcp_cb_;
     Ipv4Addr connect_ip_;
     Ipv4Addr local_ip_;
     EventManager* const emp_;

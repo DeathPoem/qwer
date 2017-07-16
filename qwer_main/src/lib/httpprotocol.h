@@ -115,6 +115,8 @@ inline int splite_by_delimiter(string const& origin, std::vector<string>& to_fil
 }
 } /* detail  */
 
+
+template <typename TCPServerClass>
 class HttpServer : public noncopyable {
 public:
     HttpServer (EventManagerWrapper* emwp, Ipv4Addr listen_ip);
@@ -127,7 +129,7 @@ private:
     map<pair<string, string>, TCPCallBack> map_;
     HttpResponse http_response_;
     HttpRequest http_request_;
-    TCPServer tcp_server_;
+    unique_ptr<TCPServerClass> tcp_server_p_;
 };
 
 using X_RF = std::function<void(HttpResponse const &)>;
@@ -150,10 +152,100 @@ private:
     unique_ptr<TCPClientClass> tcp_client_p_;
 };
 
-    template <typename TCPClientClass>
-    HttpClient::HttpClient(EventManagerWrapper *emwp, Ipv4Addr local_ip, Ipv4Addr peer_ip) {
+template <typename TCPClientClass>
+HttpClient<TCPClientClass>::HttpClient(EventManagerWrapper* emwp, Ipv4Addr local_ip,
+                       Ipv4Addr peer_ip)
+    : tcp_client_p_(new TCPClientClass(emwp, peer_ip, local_ip)) {
+    tcp_client_p_
+        ->set_tcpcon_after_connected_callback([this](TCPConnection& this_con) {
+            LOG_DEBUG("httpclient connect callback");
+            auto& wb = this_con.get_wb_ref();
+            auto check = http_request_.to_encode(wb);
+            auto check1 = this_con.to_write();
+            if (check != check1 || check == 0) { NOTDONE(); }
+        })
+        .set_msg_callback([this](uint32_t seqno) {
+            if (msg_collector_ && !reflector_) {
+                LOG_DEBUG("httpclient msg callback");
+                auto this_con = tcp_client_p_->get_shared_tcpcon_ref();
+                this_con->get_rb_ref().consume(
+                    http_response_.to_decode(this_con->get_rb_ref()));
+                msg_collector_(http_response_.body_);
+            } else if (reflector_ && !msg_collector_) {
+                NOTDONE();
+            } else {
+                NOTDONE();
+            }
+        });
+}
 
+template <typename TCPServerClass>
+HttpServer<TCPServerClass>::HttpServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip)
+    : tcp_server_p_(new TCPServerClass(emwp, listen_ip)) {
+        tcp_server_p_->set_msg_callback([this](uint32_t seqno){
+                    LOG_DEBUG("httpserver msg callback");
+                    auto this_con = tcp_server_p_->get_shared_tcpcon_ref_by_seqno(seqno);
+                    this_con->get_rb_ref().consume(
+                            http_request_.to_decode(this_con->get_rb_ref()));
+                    pair<string, string> key = make_pair(
+                            http_request_.get_method_str(),
+                            http_request_.uri_);
+                    assert(!map_.empty());
+                    auto found = map_.find(key);
+                    if (found != map_.end()) {
+                        auto& func_ref = map_[key];
+                        func_ref(*this_con);
+                        http_response_.to_encode(this_con->get_wb_ref());
+                    } else {
+                        NOTDONE();
+                    }
+                    http_request_.swap(HttpRequest());
+                });
     }
+
+    template <typename TCPClientClass>
+    HttpClient<TCPClientClass>::~HttpClient() {}
+
+    template <typename TCPServerClass>
+    HttpServer<TCPServerClass>::~HttpServer() {}
+
+template <typename TCPClientClass>
+    HttpClient<TCPClientClass>& HttpClient<TCPClientClass>::set_httpresponse_msg_collector(X_SF&& cb){
+        if (!msg_collector_&& !reflector_) {
+            msg_collector_ = std::move(cb);
+        }
+    }
+
+template <typename TCPClientClass>
+    HttpClient<TCPClientClass>& HttpClient<TCPClientClass>::set_httpresponse_reflector(X_RF&& hre_ref){
+        if (!msg_collector_ && !reflector_) {
+            reflector_ = std::move(hre_ref);
+        }
+    }
+
+template <typename TCPClientClass>
+HttpClient<TCPClientClass>& HttpClient<TCPClientClass>::set_httprequest(HttpRequest&& http_request) {
+    http_request_.swap(std::move(http_request));
+    return *this;
+}
+
+template <typename TCPServerClass>
+HttpServer<TCPServerClass>& HttpServer<TCPServerClass>::set_httpresponse(HttpResponse&& http_response) {
+    http_response_.swap(std::move(http_response));
+    return *this;
+}
+
+template <typename TCPServerClass>
+HttpServer<TCPServerClass>& HttpServer<TCPServerClass>::set_action_of(string m_str, string uri, TCPCallBack&& cb) {
+    auto found = map_.find(make_pair(m_str, uri));
+    if (found == map_.end()) {
+        map_[make_pair(m_str, uri)] = cb;
+    } else {
+        NOTDONE();
+    }
+    return *this;
+}
+
 } /* my_http */
 
 #endif /* ifndef HTTPPROTOCOL_H */
