@@ -12,7 +12,11 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
         ../runme_instead_of_cmake.sh // or cmake ..
         make && make check // or ctest -V
 
-# develop
+<font size=4 color="blue">
+---- ---- ---- ---- ---- dividing line ------ words below this line is not for user ------
+</font>
+
+# Develop
 
 * http : 
     * nodejs http-parser [ref](https://github.com/nodejs/http-parser)
@@ -38,17 +42,17 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
         * Reactor p154
     * ZMQ [ref](http://blog.jobbole.com/19647/) what you should know about, when implement a error sensitive project with cpp
 
-# todo list
+# Todo list
 
-- [ ] gtest error : recipe for target 'test' failed; type make test in /bin
-- [ ] vim-instant-markdown : install nodejs-legacy fail
-- [] make logging cpp stream style
-- [] running time logging level set
+- [x] gtest error : recipe for target 'test' failed; type make test in /bin
+- [x] vim-instant-markdown : install nodejs-legacy fail
+- [x] make logging cpp stream style
+- [x] running time logging level set
 - [x] git third party, gtest
 - [] try something about corutine, about microservices-architecture
 - [x] can I create a object in one thread and use it in another thread? Yes, of course. [ref](https://stackoverflow.com/questions/9697865/what-happens-if-i-call-an-objects-member-function-from-a-different-thread)
 - [] try something about reflection
 
-# Pitfall list 
+# Other
 
 1.  cmake config.h, is generated one by cmake:configure_file()
