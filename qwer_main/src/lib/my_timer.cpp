@@ -29,7 +29,7 @@ namespace my_http {
     }
 
     Timer::Timer(Timer&&  other) : timerid_(std::move(other.timerid_)),
-    cb_(std::move(other.cb_)) { }
+    cb_(std::move(other.cb_)), interval_(other.interval_) { }
 
     TimerId Timer::get_timerid() {
         return timerid_;
@@ -39,13 +39,14 @@ namespace my_http {
         if (this != &other) {
             timerid_ = std::move(other.timerid_);
             cb_ = std::move(other.cb_);
+            interval_ = other.interval_;
         }
         return *this;
     }
 
     void Timer::do_cb() { cb_(); }
 
-    TimerQueue::TimerQueue(EventManager& ref_em) : ref_em_(ref_em), up_ch_(new Channel(detail::creat_timerfd_mine())) {
+    TimerQueue::TimerQueue(EventManager& ref_em) : ref_em_(ref_em), up_ch_(new Channel(detail::creat_timerfd_mine())), cur_seqence_number_(0) {
         up_ch_->add_event(Channel::get_readonly_event_flag());
     }
 

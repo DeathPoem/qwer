@@ -124,14 +124,17 @@ TEST(test_case_3, test_event_loop_runat) {
     LOG_SET_LEVEL("INFO");
     string outer;
     string another;
+    string more;
     string other;
     EventManagerWrapper emw;
     auto cb0 = [&outer](){ outer = "fucking awesome!"; };
     auto cb1 = [&another](){ another = "fucking asshole!"; };
     auto cb2 = [&other](){ other = "fucking!"; };
+    auto cb3 = [&more](){more += "f";};
     emw.run_after(2300, std::move(cb0));
     emw.run_after(900, std::move(cb1));
     emw.run_after(900, std::move(cb2));
+    emw.run_after(600, std::move(cb3), 1000);
 
     for (int i : {1, 2, 3}) {
         SLOG_INFO("end of i =" << i);
@@ -145,6 +148,7 @@ TEST(test_case_3, test_event_loop_runat) {
     EXPECT_EQ(outer, "fucking awesome!");
     EXPECT_EQ(another, "fucking asshole!");
     EXPECT_EQ(other, "fucking!");
+    EXPECT_EQ(more, "fff");
 }
 
 int main(int argc, char **argv) {

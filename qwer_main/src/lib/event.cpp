@@ -82,7 +82,7 @@ namespace my_http {
         } else {
             TimeStamp when;
             when.init_stamp_of_now().add_stamp_by_mill(para_t);
-            auto ret = my_timer_queue_->add_timer(when, move(cb));
+            auto ret = my_timer_queue_->add_timer(when, move(cb), interval);
             return ret;
         }
     }

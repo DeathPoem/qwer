@@ -101,17 +101,15 @@ p_queue_(new AcceptedQueue<Qtype>()){
 
 MultiServer::~MultiServer() {}
 
-void MultiServer::AcceptorRoutine(vector<CallBack>& stop_vec) {
+void MultiServer::AcceptorRoutine() {
     if (is_accepting_ == false) {
-        AcceptorRoutineDetail(stop_vec);
+        AcceptorRoutineDetail();
     } else {
         NOTDONE();
     }
 }
 
-void MultiServer::AcceptorRoutineDetail(vector<CallBack>& stop_vec) {
-    std::unique_lock<mutex> lk(syncmutex_);
-    is_accepting_ = true;
+void MultiServer::AcceptorRoutineDetail() {
     EventManagerWrapper emw;
     MultiAcceptor x_acceptor(&emw);
     x_acceptor
@@ -119,92 +117,99 @@ void MultiServer::AcceptorRoutineDetail(vector<CallBack>& stop_vec) {
         .set_accept_readable_callback(
             [this](pair<FileDescriptorType, Ipv4Addr>&& p) { p_queue_->push_one(move(p)); })
         .epoll_and_accept();
-    lk.unlock();
-    synccv_.notify_all();
-    stop_vec.push_back([&emw](){
+    std::unique_lock<mutex> lk(syncmutex_);
+    is_accepting_ = true;
+    pool_stop_cb_vec_.emplace_back([&emw](){
         emw.exit();
     });
+    lk.unlock();
+    synccv_.notify_all();
     emw.loop();
 }
 
-void MultiServer::MsgServerRoutineDetail(vector<CallBack>& stop_vec) {
-    std::unique_lock<mutex> lk(syncmutex_);
-    synccv_.wait(lk, [this](){ return is_accepting_ == true; });
+void MultiServer::MsgServerRoutineDetail() {
     EventManagerWrapper emw;
     size_t seqno = 0;
     map<size_t, shared_ptr<TCPConnection>> tcpcon_map;
-    std::function<void()> fetch_routine = [this, &tcpcon_map, &emw, &fetch_routine, &seqno](){
-        vector<pair<FileDescriptorType, Ipv4Addr>> newpairs;
-        if (FetchOne(newpairs)) {
-            for (auto newpair : newpairs) {
-                // generate tcp con and set epoll
-                auto fd = get<0>(newpair);
-                auto ip = get<1>(newpair);
-                shared_ptr<TCPConnection> shared_p_tc( 
-                    new TCPConnection(emw.get_pimpl(), fd, listen_ip_, ip));
-                seqno++;
-                tcpcon_map[seqno] = shared_p_tc;
-                shared_p_tc->set_seqno_of_server(seqno);
-                shared_p_tc->set_normal_readable_callback([this, seqno](TCPConnection& this_con) {
-                    LOG_DEBUG("one readable callback");
-                    auto check = this_con.to_read();
-                    if (check >= 1) {
-                        if (msg_responser_cb_ != nullptr && tcp_cb_ == nullptr) {
-                            auto& rbuffer = this_con.get_rb_ref();
-                            auto& wbuffer = this_con.get_wb_ref();
-                            msg_responser_cb_(seqno, rbuffer, wbuffer,
-                                              this_con.get_bigfilesendcb());
-                            auto check1 = this_con.to_write();
-                            LOG_INFO("server respond %d bytes", check1);
-                        } else if (tcp_cb_ != nullptr &&
-                                   msg_responser_cb_ == nullptr) {
-                            tcp_cb_(this_con); // user can't get this_con through this
-                            auto check1 = this_con.to_write();
-                            LOG_INFO("server respond %d bytes", check1);
-                        } else {
-                            ABORT(
-                                    "did you remember to set callback, or duplicate or "
-                                            "conflict?");
-                        }
-                    } else {
-                        if (this_con.get_state() == TCPSTATE::Peerclosed) {
-                            LOG_WARN("no bytes to read in read cb, if it's level triggered, it means peer close, we gonna to local_close this");       // if you use level triggered, it's the problem
-                            this_con.local_close();
-                        } else if (this_con.get_state() == TCPSTATE::Localclosed){
-                            NOTDONE();
-                        } else {
-                            LOG_ERROR("???");
-                            //this_con.local_close();
-                        }
-                    }
-                })
-                .set_local_close_callback([this, &tcpcon_map](TCPConnection& this_con) {
-                    LOG_DEBUG("server : local close cb");
-                    //remove_tcpcon_by_seqno(this_con.get_seqno());
-                    auto found = tcpcon_map.find(this_con.get_seqno());
-                    if (found != tcpcon_map.end()) {
-                        tcpcon_map.erase(found);
-                    }
-                })
-                .set_peer_close_callback([this](TCPConnection& this_con) {
-                    LOG_DEBUG("server : peer down cb");
-                })
-                .epoll_and_conmunicate();
-            }
-        }
-    };
+    auto fetch_routine = get_fetch_routine(tcpcon_map, emw, seqno);
     emw.run_after(100, move(fetch_routine), idle_duration_);
-    stop_vec.push_back([&emw](){
+    LOG_DEBUG("before routine ");
+    std::unique_lock<mutex> lkk(syncmutex_);
+    pool_stop_cb_vec_.emplace_back([&emw](){
         emw.exit();
     });
+    lkk.unlock();
     emw.loop();
 }
 
-void MultiServer::MsgServerRoutine(vector<CallBack>& stop_vec) {
+    //! @brief a routine fetch accepted fd and set epoll at local eventmanager
+    std::function<void()> MultiServer::get_fetch_routine(map<size_t, shared_ptr<TCPConnection>>& tcpcon_map, EventManagerWrapper& emw, size_t& seqno) {
+        return [this, &tcpcon_map, &emw, &seqno](){
+            vector<pair<FileDescriptorType, Ipv4Addr>> newpairs;
+            if (FetchOne(newpairs)) {
+                for (auto newpair : newpairs) {
+                    LOG_DEBUG("fetch one");
+                    // generate tcp con and set epoll
+                    auto fd = get<0>(newpair);
+                    auto ip = get<1>(newpair);
+                    shared_ptr<TCPConnection> shared_p_tc(
+                            new TCPConnection(emw.get_pimpl(), fd, listen_ip_, ip));
+                    seqno++;
+                    tcpcon_map[seqno] = shared_p_tc;
+                    shared_p_tc->set_seqno_of_server(seqno);
+                    shared_p_tc->set_normal_readable_callback([this, seqno](TCPConnection& this_con) {
+                                LOG_DEBUG("one readable callback");
+                                auto check = this_con.to_read();
+                                if (check >= 1) {
+                                    if (msg_responser_cb_ != nullptr && tcp_cb_ == nullptr) {
+                                        auto& rbuffer = this_con.get_rb_ref();
+                                        auto& wbuffer = this_con.get_wb_ref();
+                                        msg_responser_cb_(seqno, rbuffer, wbuffer,
+                                                          this_con.get_bigfilesendcb());
+                                        auto check1 = this_con.to_write();
+                                        LOG_INFO("server respond %d bytes", check1);
+                                    } else if (tcp_cb_ != nullptr &&
+                                               msg_responser_cb_ == nullptr) {
+                                        tcp_cb_(this_con); // user can't get this_con through this
+                                        auto check1 = this_con.to_write();
+                                        LOG_INFO("server respond %d bytes", check1);
+                                    } else {
+                                        ABORT( "did you remember to set callback, or duplicate or conflict?");
+                                    }
+                                } else {
+                                    if (this_con.get_state() == TCPSTATE::Peerclosed) {
+                                        LOG_WARN("no bytes to read in read cb, if it's level triggered, it means peer close, we gonna to local_close this");       // if you use level triggered, it's the problem
+                                        this_con.local_close();
+                                    } else if (this_con.get_state() == TCPSTATE::Localclosed){
+                                        NOTDONE();
+                                    } else {
+                                        LOG_ERROR("???");
+                                        //this_con.local_close();
+                                    }
+                                }
+                            })
+                            .set_local_close_callback([this, &tcpcon_map](TCPConnection& this_con) {
+                                LOG_DEBUG("server : local close cb");
+                                //remove_tcpcon_by_seqno(this_con.get_seqno());
+                                auto found = tcpcon_map.find(this_con.get_seqno());
+                                if (found != tcpcon_map.end()) {
+                                    tcpcon_map.erase(found);
+                                }
+                            })
+                            .set_peer_close_callback([this](TCPConnection& this_con) {
+                                LOG_DEBUG("server : peer down cb");
+                            })
+                            .epoll_and_conmunicate();
+                }
+            }
+        };
+    }
+
+void MultiServer::MsgServerRoutine() {
     std::unique_lock<mutex> lk(syncmutex_);
     synccv_.wait(lk, [this](){ if (is_accepting_ == true) { return true; } });
     lk.unlock();
-    MsgServerRoutineDetail(stop_vec);
+    MsgServerRoutineDetail();
 }
 
 bool MultiServer::FetchOne(vector<pair<FileDescriptorType, Ipv4Addr>>& toit) {
@@ -231,13 +236,12 @@ void MultiServer::ThreadPoolStart() {
     if (ThreadPool::get_default_threadpool_size() > 2) {
         //auto amount = ThreadPool::get_default_threadpool_size();
         int amount = 2;
-        vector<CallBack> pool_stop_cb_vec;
-        thread_pool_.add_task(std::bind(&MultiServer::AcceptorRoutine, this, pool_stop_cb_vec));
+        thread_pool_.add_task(std::bind(&MultiServer::AcceptorRoutine, this));
         while (--amount > 0) {
-            thread_pool_.add_task(std::bind(&MultiServer::MsgServerRoutine, this, pool_stop_cb_vec));
+            thread_pool_.add_task(std::bind(&MultiServer::MsgServerRoutine, this));
         }
-        pool_stop_cb_ = [&](){
-            for (auto cb : pool_stop_cb_vec) {
+        pool_stop_cb_ = [this](){
+            for (auto cb : pool_stop_cb_vec_) {
                 cb();
             }
         };
@@ -248,8 +252,8 @@ void MultiServer::ThreadPoolStart() {
 }
 
 void MultiServer::Exit() {
-    thread_pool_.stop_w();
     pool_stop_cb_();
+    thread_pool_.stop_w();
 }
 
 } /* my_http  */

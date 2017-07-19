@@ -36,7 +36,8 @@ void x_client_thread_function() {
     tcpclient.set_tcpcon_after_connected_callback([](TCPConnection& this_con){
                 LOG_DEBUG("write to server");
                 this_con.write_by_string("fucking awesome!");
-                }).set_tcp_callback([&tcpclient, &write_to_server, &read_from_server](TCPConnection& this_con) {
+                })
+            .set_tcp_callback([&tcpclient, &write_to_server, &read_from_server](TCPConnection& this_con) {
                         LOG_DEBUG("read from server, ");
                         if (this_con.get_state() == TCPSTATE::Localclosed) {
                             NOTDONE();
@@ -44,18 +45,20 @@ void x_client_thread_function() {
                         string re = this_con.read_by_string();
                         read_from_server = re == "" ? read_from_server : re;
                         this_con.get_rb_ref().consume(read_from_server.size());
+                        SLOG_DEBUG("client read from server as" << read_from_server);
                         this_con.local_close();
                     });
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 20; ++i) {
         emw.loop_once(500);
         LOG_DEBUG("one pass->>>>>>>>>>>>\n");
     }
     EXPECT_EQ(read_from_server, write_to_server);
+    LOG_DEBUG("client thread end");
 }
 
 TEST(test_case_5, test_http_in_threadpool) {
     LOG_SET_FILE_P("", false);
-    LOG_SET_LEVEL("INFO");
+    LOG_SET_LEVEL("DEBUG");
     LOG_DEBUG(" \n \n in test_multithread");
     MultiServer ms;
     EchoMsgResponser msg_responser;

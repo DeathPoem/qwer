@@ -102,15 +102,16 @@ class MultiServer { //!< a multithread safe class
 public:
     MultiServer (size_t idle_duration = 100, Ipv4Addr listen_ip = Ipv4Addr(Ipv4Addr::host2ip_str("localhost"), 8001));
     virtual ~MultiServer ();
-    void AcceptorRoutine(vector<CallBack>& stop_vec); //!< to guanrantee MsgServerRoutineDetail invoke once
-    void MsgServerRoutine(vector<CallBack>& stop_vec);
+    void AcceptorRoutine(); //!< to guanrantee MsgServerRoutineDetail invoke once
+    void MsgServerRoutine();
     MultiServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
     MultiServer& set_tcp_callback(TCPCallBack && cb);
     void ThreadPoolStart();
     void Exit();
 private:
-    void MsgServerRoutineDetail(vector<CallBack>& stop_vec);
-    void AcceptorRoutineDetail(vector<CallBack>& stop_vec);
+    std::function<void()> get_fetch_routine(map<size_t, shared_ptr<TCPConnection>>& tcpcon_map, EventManagerWrapper& emwp, size_t& seqno);
+    void MsgServerRoutineDetail();    //!< we would put event.exit into stop_vec
+    void AcceptorRoutineDetail();     //!< we would put event.exit into stop_vec
     bool FetchOne(vector<pair<FileDescriptorType, Ipv4Addr>>& toit);
     const Ipv4Addr listen_ip_;
     const size_t idle_duration_;
@@ -122,7 +123,8 @@ private:
     unique_ptr<AcceptedQueue<Qtype>> p_queue_;
     MsgResponserCallBack msg_responser_cb_;
     TCPCallBack tcp_cb_;
-    CallBack pool_stop_cb_;
+    vector<CallBack> pool_stop_cb_vec_;
+    CallBack pool_stop_cb_; //!< a caller invoker cb in stop_vec
 };
 
 } /* my_http */

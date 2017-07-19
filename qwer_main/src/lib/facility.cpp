@@ -24,8 +24,8 @@ namespace my_http {
     }
 
     void TimeStamp::add_stamp_by_mill(time_ms_t para_t) {
-        uint64_t s = 2300 / 1000;
-        uint64_t remain = 2300 % 1000;
+        uint64_t s = para_t / 1000;
+        uint64_t remain = para_t % 1000;
         uint64_t addup = remain + (spec_.tv_nsec / 1.0e6);
         s += addup / 1000;
         remain = addup % 1000;
