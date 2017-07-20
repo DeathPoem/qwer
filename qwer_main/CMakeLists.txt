@@ -21,12 +21,12 @@ include_directories(
     ${http_practice_SOURCE_DIR}/third_party/json/src
     )
 
+###
+# own stuff
 include_directories(
     ${http_practice_SOURCE_DIR}/src
     ${http_practice_SOURCE_DIR}/src/lib
     )
-###
-# own stuff
 add_subdirectory(src)
 set(MY_EXTRA_LIBS ${MY_EXTRA_LIBS} my_library)
 
