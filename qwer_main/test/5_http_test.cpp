@@ -33,7 +33,7 @@ void x_server_thread() {
     x_http_response.get_test_default_one();
     HttpServer<TCPServer> httpserver(&emw, 
             Ipv4Addr(Ipv4Addr::host2ip_str("localhost"), 8000));
-    httpserver.set_action_of("Get", "/hello.html", [&httpserver](TCPConnection& this_con){
+    httpserver.set_action_of("GET", "/hello.html", [&httpserver](TCPConnection& this_con){
                 LOG_DEBUG("server : receive Get request");
             }).set_httpresponse(std::move(x_http_response));
     for (int i = 0; i < 100; ++i) {

@@ -20,6 +20,9 @@ set(MY_ROOT_PATH ${http_practice_SOURCE_DIR})
 include_directories(
     ${http_practice_SOURCE_DIR}/third_party/json/src
     )
+include_directories(
+    ${http_practice_SOURCE_DIR}/third_party/http_parser
+    )
 
 ###
 # own stuff

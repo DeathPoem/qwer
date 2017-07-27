@@ -12,14 +12,12 @@ set(CMAKE_BUILD_TYPE DEBUG)
 ###########
 # build
 project(online_example)
+set(QWER_LIBRARY_ROOT "/qwer_main_softlink")
 
 ###
 # qwer library
-include_directories(
-    ${online_example_SOURCE_DIR}/../qwer_main/src/lib
-    )
-add_subdirectory(${online_example_SOURCE_DIR}/../qwer_main)
-set(MY_EXTRA_LIBS ${MY_EXTRA_LIBS} my_library)
+add_subdirectory(${online_example_SOURCE_DIR}/${QWER_LIBRARY_ROOT}) # would build my_library target
+set(my_extra_libs ${my_extra_libs} my_library)
 
 ###
 # other library

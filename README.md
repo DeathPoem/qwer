@@ -52,6 +52,7 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
 - [] try something about corutine, about microservices-architecture
 - [x] can I create a object in one thread and use it in another thread? Yes, of course. [ref](https://stackoverflow.com/questions/9697865/what-happens-if-i-call-an-objects-member-function-from-a-different-thread)
 - [] try something about reflection
+- [] wrap http_parser into a class to use
 
 # Other
 

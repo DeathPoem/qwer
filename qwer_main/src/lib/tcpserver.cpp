@@ -506,7 +506,8 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                                    msg_responser_cb_ == nullptr) {
                             tcp_cb_(this_con);
                             auto check1 = this_con.to_write();
-                            LOG_INFO("server respond %d bytes", check1);
+                            // TODO change it to info
+                            LOG_DEBUG("server respond %d bytes", check1);
                         } else {
                             ABORT(
                                     "did you remember to set callback, or duplicate or "

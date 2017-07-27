@@ -136,7 +136,7 @@ TEST(test_case_3, test_event_loop_runat) {
     emw.run_after(900, std::move(cb2));
     emw.run_after(600, std::move(cb3), 1000);
 
-    for (int i : {1, 2, 3}) {
+    for (int i : {1, 2, 3, 4, 5}) {
         SLOG_INFO("end of i =" << i);
         try {
             emw.loop_once(1 * 1000);

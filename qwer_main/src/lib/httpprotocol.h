@@ -3,6 +3,7 @@
 
 #include "tcpserver.h"
 #include "nettools.h"
+//#include "../third_party/http-parser/http_parser.h"
 
 namespace my_http {
 
@@ -164,12 +165,11 @@ HttpClient<TCPClientClass>::HttpClient(EventManagerWrapper* emwp, Ipv4Addr local
             auto check1 = this_con.to_write();
             if (check != check1 || check == 0) { NOTDONE(); }
         })
-        .set_msg_callback([this](uint32_t seqno) {
+        .set_tcp_callback([this](TCPConnection& this_con) {
             if (msg_collector_ && !reflector_) {
-                LOG_DEBUG("httpclient msg callback");
-                auto this_con = tcp_client_p_->get_shared_tcpcon_ref();
-                this_con->get_rb_ref().consume(
-                    http_response_.to_decode(this_con->get_rb_ref()));
+                LOG_DEBUG("httpclient tcp callback");
+                this_con.get_rb_ref().consume(
+                    http_response_.to_decode(this_con.get_rb_ref()));
                 msg_collector_(http_response_.body_);
             } else if (reflector_ && !msg_collector_) {
                 NOTDONE();
@@ -182,11 +182,10 @@ HttpClient<TCPClientClass>::HttpClient(EventManagerWrapper* emwp, Ipv4Addr local
 template <typename TCPServerClass>
 HttpServer<TCPServerClass>::HttpServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip)
     : tcp_server_p_(new TCPServerClass(emwp, listen_ip)) {
-        tcp_server_p_->set_msg_callback([this](uint32_t seqno){
-                    LOG_DEBUG("httpserver msg callback");
-                    auto this_con = tcp_server_p_->get_shared_tcpcon_ref_by_seqno(seqno);
-                    this_con->get_rb_ref().consume(
-                            http_request_.to_decode(this_con->get_rb_ref()));
+        tcp_server_p_->set_tcp_callback([this](TCPConnection& this_con) {
+                    LOG_DEBUG("httpserver tcp callback");
+                    this_con.get_rb_ref().consume(
+                            http_request_.to_decode(this_con.get_rb_ref()));
                     pair<string, string> key = make_pair(
                             http_request_.get_method_str(),
                             http_request_.uri_);
@@ -194,8 +193,9 @@ HttpServer<TCPServerClass>::HttpServer(EventManagerWrapper* emwp, Ipv4Addr liste
                     auto found = map_.find(key);
                     if (found != map_.end()) {
                         auto& func_ref = map_[key];
-                        func_ref(*this_con);
-                        http_response_.to_encode(this_con->get_wb_ref());
+                        func_ref(this_con);
+                        size_t count = http_response_.to_encode(this_con.get_wb_ref());
+                        LOG_DEBUG("encode %d", count);
                     } else {
                         NOTDONE();
                     }
@@ -245,6 +245,24 @@ HttpServer<TCPServerClass>& HttpServer<TCPServerClass>::set_action_of(string m_s
     }
     return *this;
 }
+
+//! @brief a wrapper for http_parser git submodule
+//  TODO
+//using ParserCallBack = std::function<void()>;
+//using XParserCallBack = std::function<void(char const * at, size_t length)>;
+//class HttpParser {
+//public:
+//    HttpParser ();
+//    virtual ~HttpParser ();
+//    void init_before_set_cb();
+//    void set_cb(string cb_name, ParserCallBack&& cb);
+//    void set_cb(string cb_name, XParserCallBack&& cb);
+//    string get_some_in_cb();    //!< for user to invoke in callback, this method would check if caller is callback by is_in_cb()
+//
+//private:
+//    bool is_in_cb();
+//    
+//};
 
 } /* my_http */
 

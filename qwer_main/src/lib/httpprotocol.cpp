@@ -7,7 +7,7 @@ HttpMsg::~HttpMsg() {}
 HttpMsg::HttpMsg() {}
 
 HttpMsg::HttpMethod HttpMsg::str2Method(string s) {
-    if (s == "Get") {
+    if (s == "GET") {
         return HttpMethod::Get;
     } else {
         NOTDONE();
@@ -36,7 +36,7 @@ HttpMsg::HttpStatusCodes HttpMsg::str2Status(string s) {
 
 string HttpMsg::Method2str(HttpMethod hm) {
     if (hm == HttpMethod::Get) {
-        return string("Get");
+        return string("GET");
     } else {
         NOTDONE();
     }
@@ -121,8 +121,7 @@ size_t HttpMsg::try_decode_of(Buffer& buffer,
                 } else if (noheaders) {
                     // body
                     body_ref = line;
-                } else if (!noheaders &&
-                           cur < size - CRLF_.size()  // not last CRLF_
+                } else if (!noheaders
                            && line == "") {  // double CRLF would cause this
                     // blankline
                     noheaders = true;
