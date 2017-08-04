@@ -14,6 +14,9 @@ HttpMsg::HttpMethod HttpMsg::str2Method(string s) {
     }
 }
 
+    static const string HttpMsg::CRLF_ = "\r\n";
+    static const string HttpMsg::HTML_NEWLINE_ = string(u8"\u8629");
+
 HttpMsg::HttpVersion HttpMsg::str2Version(string s) {
     if (s == "HTTP/1.1") {
         return HttpVersion::Http1_1;
@@ -239,8 +242,7 @@ void HttpResponse::get_test_default_one() {
     assert(headers_lines_.empty());
     headers_lines_[0] = make_pair("Date", " Mon, 27 Jul 2009 12:28:53 GMT");
     headers_lines_[1] = make_pair("Server", " Apache/2.2.14 (Win32)");
-    headers_lines_[2] =
-        make_pair("Last-Modified", " Wed, 22 Jul 2009 19:15:56 GMT");
+    headers_lines_[2] = make_pair("Last-Modified", " Wed, 22 Jul 2009 19:15:56 GMT");
     headers_lines_[3] = make_pair("Content-Length", " 88");
     headers_lines_[4] = make_pair("Content-Type", " text/html");
     headers_lines_[5] = make_pair("Connection", " Closed");

@@ -157,12 +157,14 @@ public:
     TCPServer& set_accept_get_tcpcon_seqno_callback(GetSeqnoCallBack&& cb); // this interface is not essential
     // provide a interface to let outside code to respond, one of following should be used
     TCPServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
+    TCPServer& set_after_to_write_cb(TCPCallBack&& cb);
     TCPServer& set_tcp_callback(TCPCallBack && cb);
     shared_ptr<TCPConnection>& get_shared_tcpcon_ref_by_seqno(uint32_t seqno);
     TCPSTATE get_state();
     void remove_tcpcon_by_seqno(uint32_t);
 private:
     TCPCallBack after_connected_;
+    TCPCallBack after_to_write_cb_;
     GetSeqnoCallBack seqno_cb_;
     MsgResponserCallBack msg_responser_cb_;
     TCPCallBack tcp_cb_;

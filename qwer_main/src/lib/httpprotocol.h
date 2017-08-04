@@ -7,7 +7,6 @@
 
 namespace my_http {
 
-// user should not use this class
 class HttpMsg {
 public:
     HttpMsg();
@@ -15,19 +14,19 @@ public:
 
     virtual size_t to_decode(Buffer& buf) = 0;
     virtual size_t to_encode(Buffer& buf) = 0;
-
-protected:
     enum class HttpMethod { Invalid, Get };
     enum class HttpVersion { Invalid, Http1_0, Http1_1 };
     enum class HttpStatusCodes { Invalid, c_200, c_404 };
+
+    static const string CRLF_;
+    static const string HTML_NEWLINE_;
+protected:
     HttpMethod str2Method(string s);
     string Method2str(HttpMethod hm);
     HttpVersion str2Version(string s);
     string Version2str(HttpVersion hv);
     HttpStatusCodes str2Status(string s);
     string Status2str(HttpStatusCodes hs);
-    const string CRLF_ = "\r\n";
-    const string HTML_NEWLINE_ = string(u8"\u8629");
     size_t try_decode_of(Buffer& buffer, std::function<void(string)> const & func, map<int, pair<string, string>> & headers_lines_ref, HttpVersion& version_ref, string & body_ref);
 };
 
@@ -200,6 +199,9 @@ HttpServer<TCPServerClass>::HttpServer(EventManagerWrapper* emwp, Ipv4Addr liste
                         NOTDONE();
                     }
                     http_request_.swap(HttpRequest());
+                })
+                .set_after_to_write_cb([this](TCPConnection& this_con) {
+                    this_con.local_close();
                 });
     }
 

@@ -513,6 +513,9 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                                     "did you remember to set callback, or duplicate or "
                                             "conflict?");
                         }
+                        if (after_to_write_cb_ != nullptr) {
+                            after_to_write_cb_(this_con);
+                        }
                     } else {
                         //FIXME is this right?
                         if (this_con.get_state() == TCPSTATE::Peerclosed) {
@@ -575,6 +578,10 @@ TCPServer& TCPServer::set_accept_get_tcpcon_seqno_callback(
     seqno_cb_ = std::move(cb);
     return *this;
 }
+    TCPServer& TCPServer::set_after_to_write_cb(TCPCallBack &&cb) {
+        after_to_write_cb_ = std::move(cb);
+        return *this;
+    }
 
 TCPServer& TCPServer::set_msg_responser_callback(MsgResponserCallBack&& cb) {
     msg_responser_cb_ = std::move(cb);

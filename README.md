@@ -12,6 +12,18 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
         ../runme_instead_of_cmake.sh // or cmake ..
         make && make check // or ctest -V
 
+* using wrk to benchmark this project :
+
+        Running 30s test @ http://127.0.0.1:8080/hello.html
+          2 threads and 200 connections
+          Thread Stats   Avg      Stdev     Max   +/- Stdev
+            Latency    10.23ms   19.15ms 435.35ms   98.98%
+            Req/Sec     3.67k     2.77k    8.17k    51.95%
+          28798 requests in 30.04s, 2.42MB read
+          Socket errors: connect 265, read 28798, write 0, timeout 0
+        Requests/sec:    958.50
+        Transfer/sec:     82.37KB
+
 <font size=4 color="blue">
 ---- ---- ---- ---- ---- dividing line ------ words below this line is not for user ------
 </font>
