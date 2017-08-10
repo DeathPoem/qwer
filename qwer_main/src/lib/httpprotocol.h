@@ -3,6 +3,7 @@
 
 #include "tcpserver.h"
 #include "nettools.h"
+#include "multithread_version.h"
 //#include "../third_party/http-parser/http_parser.h"
 
 namespace my_http {
@@ -120,10 +121,11 @@ template <typename TCPServerClass>
 class HttpServer : public noncopyable {
 public:
     HttpServer (EventManagerWrapper* emwp, Ipv4Addr listen_ip);
+    HttpServer (size_t idle, Ipv4Addr listen_ip);
     virtual ~HttpServer ();
     HttpServer& set_action_of(string m_str, string uri, TCPCallBack&& cb);
     HttpServer& set_httpresponse(HttpResponse&& http_response_r_ref);
-    void to_encode(Buffer& wb);
+    //void to_encode(Buffer& wb);
 
 private:
     map<pair<string, string>, TCPCallBack> map_;
@@ -141,7 +143,7 @@ public:
     HttpClient (EventManagerWrapper* emwp, Ipv4Addr local_ip, Ipv4Addr peer_ip);
     virtual ~HttpClient ();
     HttpClient& set_httprequest(HttpRequest&& http_request_r_ref);
-    HttpClient& set_httpresponse_msg_collector(X_SF&& cb);   // this is for short TCP link
+    HttpClient& set_httpresponse_msg_collector(X_SF&& cb);
     HttpClient& set_httpresponse_reflector(X_RF&& hre_ref);
 
 private:
@@ -151,6 +153,38 @@ private:
     HttpRequest http_request_;
     unique_ptr<TCPClientClass> tcp_client_p_;
 };
+
+    //! read httprequest and write your httpresponse, then call to_lazy_close() if you want a non-persistent connection( close socket after response)
+    //! this callback should be reentrancy one
+    using HttpCallBack = function<void(TCPConnection&, unique_ptr<HttpRequest>, shared_ptr<HttpResponse>)>;  //!< each request is created by each parse, but response can be a cashed object.
+
+    //! thread safe http api holder and http request handler, thread safe for read operation
+    class HttpSetting {
+    public:
+        HttpSetting();
+        virtual ~HttpSetting();
+        HttpSetting& set_action_of(string method, string uri, HttpCallBack&& cb);   //!< lock free
+        HttpSetting& cash_response_of(string method, string uri, shared_ptr<HttpResponse> res_p);
+        void doit(unique_ptr<HttpRequest>&& http_request, TCPConnection& this_con);   //!< lock free until invoke HttpCallBack if HttpCallBack is not thread safe
+    private:
+        mutex mutex_;
+        map<pair<string, string>, HttpCallBack> map_;
+        map<pair<string, string>, shared_ptr<HttpResponse>> map_res_;
+    };
+
+template <>
+class HttpServer<MultiServer> : public noncopyable {
+public:
+    HttpServer (size_t idle, Ipv4Addr listen_ip, shared_ptr<HttpSetting> httpsetting);
+    virtual ~HttpServer ();
+    void Start();
+    void Exit();
+private:
+    shared_ptr<HttpSetting> p_httpsetting_;
+    unique_ptr<MultiServer> tcp_server_p_;
+};
+
+
 
 template <typename TCPClientClass>
 HttpClient<TCPClientClass>::HttpClient(EventManagerWrapper* emwp, Ipv4Addr local_ip,
@@ -193,15 +227,12 @@ HttpServer<TCPServerClass>::HttpServer(EventManagerWrapper* emwp, Ipv4Addr liste
                     if (found != map_.end()) {
                         auto& func_ref = map_[key];
                         func_ref(this_con);
-                        size_t count = http_response_.to_encode(this_con.get_wb_ref());
+                        size_t count = http_response_.to_encode(this_con.get_wb_ref());     // should I let user to do this ?TODO
                         LOG_DEBUG("encode %d", count);
                     } else {
                         NOTDONE();
                     }
                     http_request_.swap(HttpRequest());
-                })
-                .set_after_to_write_cb([this](TCPConnection& this_con) {
-                    this_con.local_close();
                 });
     }
 
@@ -263,7 +294,7 @@ HttpServer<TCPServerClass>& HttpServer<TCPServerClass>::set_action_of(string m_s
 //
 //private:
 //    bool is_in_cb();
-//    
+//
 //};
 
 } /* my_http */

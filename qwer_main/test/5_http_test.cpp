@@ -45,6 +45,23 @@ void x_server_thread() {
     }
 }
 
+void y_server_thread() {
+    MultiServer ms;
+    EchoMsgResponser msg_responser;
+    ms.set_msg_responser_callback([&msg_responser](size_t seqno, Buffer& rb, Buffer& wb, BigFileSendCallBack&& cb) {
+        LOG_DEBUG("read from client");
+        msg_responser.do_it_for_con_of_seqno(seqno, rb, wb);
+    });
+    ms.ThreadPoolStart();
+    server_is_on = true;
+    x_cv.notify_one();
+    {
+        std::unique_lock<mutex> lk(x_mm);
+        x_cv.wait(lk, [](){ return server_to_exit == true;});
+    }
+    ms.Exit();
+}
+
 TEST(test_case_5, test_http) {
     LOG_SET_FILE_P("", false);
     LOG_SET_LEVEL("DEBUG");
@@ -56,14 +73,31 @@ TEST(test_case_5, test_http) {
     }
     auto client_thread = std::thread(x_client_thread);
     client_thread.join();
+    LOG_DEBUG("client threadd join");
     server_to_exit = true;
     server_thread.join();
+    LOG_DEBUG("server threadd join");
     server_to_exit = false;
     server_is_on = false;
 }
 
 TEST(test_case_5, test_http_in_threadpool) {
-
+    LOG_SET_FILE_P("", false);
+    LOG_SET_LEVEL("DEBUG");
+    LOG_DEBUG(" \n \n in test_http");
+    auto server_thread = std::thread(y_server_thread);
+    {
+        std::unique_lock<mutex> lk(x_mm);
+        x_cv.wait(lk, [](){ return server_is_on == true;});
+    }
+    auto client_thread = std::thread(x_client_thread);
+    client_thread.join();
+    LOG_DEBUG("client threadd join");
+    server_to_exit = true;
+    server_thread.join();
+    LOG_DEBUG("server threadd join");
+    server_to_exit = false;
+    server_is_on = false;
 }
 
 int main(int argc, char** argv) {

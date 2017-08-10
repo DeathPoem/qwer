@@ -1,16 +1,21 @@
 # qwer
+qwer is a funcional network library with little web support.
 
-We want qwer be a funcional mainly with some object-oriented(or based depends on how many inheritance) network library
+# Quick Start
 
-# Usage
+# Install & and Usage
 
-* do following :
+* compile:
 
         cd ./qwer/qwer_main
         mkdir ./bin
         cd ./bin
         ../runme_instead_of_cmake.sh // or cmake ..
         make && make check // or ctest -V
+
+* add dependency in your CMakeLists.txt:
+
+    //TODO
 
 * using wrk to benchmark this project :
 
@@ -35,14 +40,18 @@ We want qwer be a funcional mainly with some object-oriented(or based depends on
     * webmachine [ref](https://github.com/webmachine/webmachine/blob/master/src/webmachine_decision_core.erl), can I do my http decision like this?
         webmachine image [ref](https://github.com/webmachine/webmachine/blob/master/docs/http-headers-status-v3.png)
 
-* network architecture : 
+* web framework:
+    * crow
+    * silicon
+
+* other : 
     * one reactor per thread(one event-loop per thread) 
     * thread pool with main thread to accept connection, and other thread to handle connections
     * TCP for IPC 
     * message format : json or google protocol buffers
     * thread safe queue for thread communication and data passing
 
-* More Reference :
+* network library :
 
     * libevent --> reactor
     * asio boost[c++11 example](http://www.boost.org/doc/libs/master/doc/html/boost_asio/examples/cpp11_examples.html) --> proactor

@@ -5,9 +5,9 @@ static int static_func() {
     return 1;
 }
 
-TEST(test_case_0, gtest_config_test) { EXPECT_EQ(1, static_func()); }
+TEST(test_case_0, gtest_config_test) { EXPECT_EQ(1, static_func()); }   //!< gtest
 
-TEST(test_case_0, json_config_test) {
+TEST(test_case_0, json_config_test) {   //!< json
     using json = nlohmann::json;
     json j2 = {
         {"pi", 3.141},

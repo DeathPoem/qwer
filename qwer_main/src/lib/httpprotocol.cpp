@@ -268,5 +268,80 @@ void HttpResponse::swap(HttpResponse&& other) {
     std::swap(statuscode_, other.statuscode_);
     headers_lines_.swap(other.headers_lines_);
 }
+    void HttpServer<MultiServer>::Start() {
+        LOG_DEBUG("in Start()");
+        if (tcp_server_p_) {
+            tcp_server_p_->ThreadPoolStart();
+        }
+    }
 
+    void HttpServer<MultiServer>::Exit() {
+        if (tcp_server_p_) {
+            tcp_server_p_->Exit();
+        }
+    }
+
+    HttpServer<MultiServer>::HttpServer(size_t idle, Ipv4Addr listen_ip, shared_ptr<HttpSetting> http_s_)
+            : tcp_server_p_(new MultiServer(idle, listen_ip)),
+              p_httpsetting_(http_s_) {
+        tcp_server_p_->set_tcp_callback([this](TCPConnection& this_con) {
+                    LOG_DEBUG("httpserver tcp callback");
+                    unique_ptr<HttpRequest> http_request(new HttpRequest());
+                    this_con.get_rb_ref().consume(
+                            http_request->to_decode(this_con.get_rb_ref()));
+                    p_httpsetting_->doit(move(http_request), this_con);
+                });
+    }
+
+    HttpServer<MultiServer>::~HttpServer() {
+
+    }
+
+    HttpSetting::HttpSetting() {
+
+    }
+
+    HttpSetting::~HttpSetting() {
+
+    }
+
+    HttpSetting& HttpSetting::set_action_of(string m_str, string uri, HttpCallBack&& cb) {
+        auto found = map_.find(make_pair(m_str, uri));
+        if (found == map_.end()) {
+            map_[make_pair(m_str, uri)] = cb;
+        } else {
+            NOTDONE();
+        }
+        return *this;
+    }
+
+    HttpSetting& HttpSetting::cash_response_of(string m_str, string uri, shared_ptr<HttpResponse> res_p) {
+        auto found = map_res_.find(make_pair(m_str, uri));
+        if (found == map_res_.end()) {
+            map_res_[make_pair(m_str, uri)] = res_p;
+        } else {
+            NOTDONE();
+        }
+        return *this;
+    }
+
+    void HttpSetting::doit(unique_ptr<HttpRequest>&& http_request, TCPConnection &this_con) {
+        pair<string, string> key = make_pair(
+                http_request->get_method_str(),
+                http_request->uri_);
+        assert(!map_.empty());
+        auto found = map_.find(key);
+        if (found != map_.end()) {
+            auto& func_ref = map_[key];
+            shared_ptr<HttpResponse> http_response;
+            auto found2 = map_res_.find(key);
+            if (found2 != map_res_.end()) {http_response = map_res_[key];}
+            func_ref(this_con, move(http_request), http_response);
+            if (http_response == nullptr) {ABORT("please get your response in httpcallback and asign it to the parameter");}
+            size_t count = http_response->to_encode(this_con.get_wb_ref());
+            LOG_DEBUG("encode %d", count);
+        } else {
+            NOTDONE();
+        }
+    }
 } /* my_http */

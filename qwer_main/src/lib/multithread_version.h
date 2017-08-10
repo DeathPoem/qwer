@@ -106,6 +106,7 @@ public:
     void MsgServerRoutine();
     MultiServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
     MultiServer& set_tcp_callback(TCPCallBack && cb);
+    //MultiServer& set_after_to_write_cb(TCPCallBack&& cb);
     void ThreadPoolStart();
     void Exit();
 private:
@@ -122,6 +123,7 @@ private:
     using Qtype = pair<FileDescriptorType, Ipv4Addr>;
     unique_ptr<AcceptedQueue<Qtype>> p_queue_;
     MsgResponserCallBack msg_responser_cb_;
+    //TCPCallBack after_to_write_cb_;
     TCPCallBack tcp_cb_;
     vector<CallBack> pool_stop_cb_vec_;
     CallBack pool_stop_cb_; //!< a caller invoker cb in stop_vec

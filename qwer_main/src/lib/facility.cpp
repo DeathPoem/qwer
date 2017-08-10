@@ -108,7 +108,7 @@ namespace my_http {
         if (strcmp(file, "")) {
             sprintf(filename, "%s", file);
         } else {
-            sprintf(filename, "%s/stuff/log.txt", GET_MY_ROOT_PATH);
+            sprintf(filename, "%s/stuff/log.txt", GET_MY_COMPILE_ROOT_PATH);
         }
         fd = open(filename, O_WRONLY | O_TRUNC | O_APPEND);
         if (fd == -1) {
@@ -116,7 +116,7 @@ namespace my_http {
         }
         if (fd < 0) {
             char debug_buf[1000];
-            sprintf(debug_buf, "can't open file, filename=%s, root =%s", filename, GET_MY_ROOT_PATH);
+            sprintf(debug_buf, "can't open file, filename=%s, root =%s", filename, GET_MY_COMPILE_ROOT_PATH);
             string tx = string(debug_buf);
             cout << tx << endl;
             throw std::runtime_error("no file opened");

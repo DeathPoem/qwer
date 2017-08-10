@@ -17,7 +17,8 @@ set(QWER_LIBRARY_ROOT "/qwer_main_softlink")
 ###
 # qwer library
 add_subdirectory(${online_example_SOURCE_DIR}/${QWER_LIBRARY_ROOT}) # would build my_library target
-set(my_extra_libs ${my_extra_libs} my_library)
+find_package(Threads)
+set(my_extra_libs ${my_extra_libs} my_library ${CMAKE_THREAD_LIBS_INIT})
 
 ###
 # other library

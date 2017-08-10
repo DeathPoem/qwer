@@ -176,6 +176,9 @@ void MultiServer::MsgServerRoutineDetail() {
                                     } else {
                                         ABORT( "did you remember to set callback, or duplicate or conflict?");
                                     }
+                                    //if (after_to_write_cb_ != nullptr) {
+                                        //after_to_write_cb_(this_con);
+                                    //}
                                 } else {
                                     if (this_con.get_state() == TCPSTATE::Peerclosed) {
                                         LOG_WARN("no bytes to read in read cb, if it's level triggered, it means peer close, we gonna to local_close this");       // if you use level triggered, it's the problem
@@ -245,6 +248,7 @@ void MultiServer::ThreadPoolStart() {
                 cb();
             }
         };
+        LOG_DEBUG("before thread_pool start");
         thread_pool_.start();   // threads would block at loop()
     } else {
         NOTDONE();
@@ -255,5 +259,10 @@ void MultiServer::Exit() {
     pool_stop_cb_();
     thread_pool_.stop_w();
 }
+
+    //MultiServer& MultiServer::set_after_to_write_cb(TCPCallBack &&cb) {
+    //    after_to_write_cb_ = move(cb);
+    //    return *this;
+    //}
 
 } /* my_http  */
