@@ -177,7 +177,7 @@ class HttpServer<MultiServer> : public noncopyable {
 public:
     HttpServer (size_t idle, Ipv4Addr listen_ip, shared_ptr<HttpSetting> httpsetting);
     virtual ~HttpServer ();
-    void Start();
+    void Start(function<bool()>&& checker = nullptr);
     void Exit();
 private:
     shared_ptr<HttpSetting> p_httpsetting_;
@@ -230,6 +230,7 @@ HttpServer<TCPServerClass>::HttpServer(EventManagerWrapper* emwp, Ipv4Addr liste
                         size_t count = http_response_.to_encode(this_con.get_wb_ref());     // should I let user to do this ?TODO
                         LOG_DEBUG("encode %d", count);
                     } else {
+                        SLOG_ERROR("no key of" << get<0>(key) << " " << get<1>(key));
                         NOTDONE();
                     }
                     http_request_.swap(HttpRequest());

@@ -14,6 +14,7 @@ struct Ipv4Addr {
     static string host2ip_str(string const & host);
     int ip_bind_socketfd(int fd);
     bool operator==(Ipv4Addr const & rhs) const;
+    void general_ip_operation(string method, string op);
 
 private:
     static int hostname_2_ip(char* hostname, char* ip);

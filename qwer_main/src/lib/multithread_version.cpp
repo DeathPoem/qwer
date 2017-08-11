@@ -96,7 +96,9 @@ MultiServer::MultiServer(size_t idle, Ipv4Addr listen_ip)
     idle_duration_(idle),
     listen_ip_(listen_ip),
 p_queue_(new AcceptedQueue<Qtype>()){
-
+        default_current_thread_block_check_ = [this](){
+            return threads_in_pool_ends_;
+        };
     }
 
 MultiServer::~MultiServer() {}
@@ -176,6 +178,7 @@ void MultiServer::MsgServerRoutineDetail() {
                                     } else {
                                         ABORT( "did you remember to set callback, or duplicate or conflict?");
                                     }
+                                    this_con.do_lazy_close();
                                     //if (after_to_write_cb_ != nullptr) {
                                         //after_to_write_cb_(this_con);
                                     //}
@@ -235,7 +238,10 @@ MultiServer& MultiServer::set_msg_responser_callback(MsgResponserCallBack&& cb) 
     return *this;
 }
 
-void MultiServer::ThreadPoolStart() {
+void MultiServer::ThreadPoolStart(function<bool()>&& block_checker) {
+    if (block_checker != nullptr) {
+        default_current_thread_block_check_ = block_checker;
+    }
     if (ThreadPool::get_default_threadpool_size() > 2) {
         //auto amount = ThreadPool::get_default_threadpool_size();
         int amount = 2;
@@ -249,15 +255,21 @@ void MultiServer::ThreadPoolStart() {
             }
         };
         LOG_DEBUG("before thread_pool start");
-        thread_pool_.start();   // threads would block at loop()
+        thread_pool_.start();   //!< threads would block at loop() but this main thread won't block
+        {
+            std::unique_lock<mutex> lk(cur_block_mutex_);
+            cur_block_cv_.wait(lk, default_current_thread_block_check_);
+        }
     } else {
         NOTDONE();
     }
 }
 
+    //! @brief this function can be cast to other threads
 void MultiServer::Exit() {
     pool_stop_cb_();
     thread_pool_.stop_w();
+    threads_in_pool_ends_ = true;
 }
 
     //MultiServer& MultiServer::set_after_to_write_cb(TCPCallBack &&cb) {

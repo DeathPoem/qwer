@@ -48,7 +48,7 @@ void ThreadPool::start() {
     if (!is_running_) {
         NOTDONE();
     } else {
-        cv_.notify_all();
+        cv_.notify_all();   //!< power on all of threads
     }
 }
 

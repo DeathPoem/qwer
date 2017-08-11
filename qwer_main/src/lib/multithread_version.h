@@ -107,7 +107,7 @@ public:
     MultiServer& set_msg_responser_callback(MsgResponserCallBack&& cb);
     MultiServer& set_tcp_callback(TCPCallBack && cb);
     //MultiServer& set_after_to_write_cb(TCPCallBack&& cb);
-    void ThreadPoolStart();
+    void ThreadPoolStart(function<bool()>&& block_checker = nullptr);
     void Exit();
 private:
     std::function<void()> get_fetch_routine(map<size_t, shared_ptr<TCPConnection>>& tcpcon_map, EventManagerWrapper& emwp, size_t& seqno);
@@ -126,7 +126,11 @@ private:
     //TCPCallBack after_to_write_cb_;
     TCPCallBack tcp_cb_;
     vector<CallBack> pool_stop_cb_vec_;
+    bool threads_in_pool_ends_ = false;
     CallBack pool_stop_cb_; //!< a caller invoker cb in stop_vec
+    function<bool()> default_current_thread_block_check_;   //!< if return true, would continue block current thread
+    condition_variable cur_block_cv_;
+    mutex cur_block_mutex_;
 };
 
 } /* my_http */

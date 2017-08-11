@@ -61,7 +61,7 @@ public:
     //! @brief the init behavior is every threads in that threadpool wait for cv_ until start().
     ThreadPool(int threadsize = ThreadPool::get_default_threadpool_size(), int tasksize = 1000);
     virtual ~ThreadPool();
-    //! @brief notify every threads to wake up and work, won't block the current thread
+    //! @brief notify every threads to wake up and work, won't block the current thread, user should block the current thread if threads in pool depends on resources in current thread.
     void start();
     void stop_w();
     bool add_task(CallBack&& cb);

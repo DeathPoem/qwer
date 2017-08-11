@@ -268,10 +268,10 @@ void HttpResponse::swap(HttpResponse&& other) {
     std::swap(statuscode_, other.statuscode_);
     headers_lines_.swap(other.headers_lines_);
 }
-    void HttpServer<MultiServer>::Start() {
+    void HttpServer<MultiServer>::Start(function<bool()>&& checker) {
         LOG_DEBUG("in Start()");
         if (tcp_server_p_) {
-            tcp_server_p_->ThreadPoolStart();
+            tcp_server_p_->ThreadPoolStart(move(checker));
         }
     }
 
@@ -341,7 +341,7 @@ void HttpResponse::swap(HttpResponse&& other) {
             size_t count = http_response->to_encode(this_con.get_wb_ref());
             LOG_DEBUG("encode %d", count);
         } else {
-            NOTDONE();
+            SLOG_WARN("unsuccessful http response" << ",method " << get<0>(key) << ",uri " << get<1>(key));
         }
     }
 } /* my_http */

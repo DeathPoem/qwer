@@ -35,12 +35,9 @@ int deamon_0() {
 
 //! @brief multi thread server
 int deamon_1() {
-    // set log 
     LOG_SET_FILE_P("./tmp_log.txt", false);
     LOG_SET_LEVEL("DEBUG");
     LOG_DEBUG(" \n \n in test_multithread");
-
-    // set http api
     shared_ptr<HttpResponse> x_http_response(new HttpResponse());
     x_http_response->version_ = HttpMsg::HttpVersion ::Http1_1;
     x_http_response->statuscode_ = HttpMsg::HttpStatusCodes::c_200;
@@ -57,13 +54,10 @@ int deamon_1() {
                     (TCPConnection& this_con, unique_ptr<HttpRequest> req, shared_ptr<HttpResponse> res){ //!< you don't need to create new res, because res is cashed, (effective consider)
                 this_con.to_lazy_close();
             });
-    // serve and block until functor return true;
     cout << "begin server" << endl;
-    httpserver.Start([](){
-                std::this_thread::sleep_for(10000ms);
-                return true;
-            });
+    httpserver.Start();
     cout << "end of server" << endl;
+    std::this_thread::sleep_for(3000ms);
     httpserver.Exit();
 }
 

@@ -13,6 +13,10 @@ bool Ipv4Addr::operator==(const Ipv4Addr& rhs) const {
            addr_.sin_port == rhs_addr_in.sin_port;
 }
 
+    void Ipv4Addr::general_ip_operation(string method, string op) {
+        //TODO make keepalive, nodelay ...
+    }
+
 int Ipv4Addr::hostname_2_ip(char* hostname, char* ip) {
     struct hostent* he;
     struct in_addr** addr_list;

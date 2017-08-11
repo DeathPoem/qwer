@@ -66,7 +66,7 @@ inline std::string get_time_of_now();
 #define LOG_DEBUG(...) log_if_level(Logger::LogLevel::DEBUG, __VA_ARGS__)
 #define LOG_INFO(...) log_if_level(Logger::LogLevel::INFO, __VA_ARGS__)
 #define LOG_SET_FILE(file) Logger::get_logger().repare(file).set_buffer_active(true)
-#define LOG_SET_FILE_P(file, flag) Logger::get_logger().repare(file).set_buffer_active(flag)        // set flag to true would let it be thread safe log
+#define LOG_SET_FILE_P(file, flag) Logger::get_logger().repare(file).set_buffer_active(flag)        //!< set flag to true would let it be thread safe log, and would improve effective
 #define LOG_SET_LEVEL(level) Logger::get_logger().set_log_level(level)
 #define ABORT(...) \
     do {\
