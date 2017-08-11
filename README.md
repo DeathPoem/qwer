@@ -1,4 +1,4 @@
-# qwer
+j qwer
 qwer is a funcional network library with little web support.
 
 # Quick Start
@@ -67,8 +67,8 @@ qwer is a funcional network library with little web support.
         Requests/sec:    958.50
         Transfer/sec:     82.37KB
 
-<font size=4 color="blue">
----- ---- ---- ---- ---- dividing line ------ words below this line is not for user ------
+<font size=6 color="green">
+------ words below this line is not for user ------
 </font>
 
 # Develop
