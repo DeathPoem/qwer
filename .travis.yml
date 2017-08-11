@@ -14,9 +14,8 @@ addons:
             - gcc-6
             - g++-6
             - cmake
-            - clang-3.6
         script:
-            Link gcc-6 and g++-6 to their standard commands
+            #Link gcc-6 and g++-6 to their standard commands
             - ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
             - ln -s /usr/bin/g++-6 /usr/local/bin/g++
             # Export CC and CXX to tell cmake which compiler to use
@@ -27,6 +26,7 @@ addons:
             # Run your build commands next
 
 before_script:
+    - g++ -v
     - cd ./qwer_main
     - mkdir bin
     - cd bin
