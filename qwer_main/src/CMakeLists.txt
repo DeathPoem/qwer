@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.2)
 
 configure_file("${MY_ROOT_PATH}/src/lib/config.h.in" "${MY_ROOT_PATH}/src/lib/config.h")
 include_directories(${CMACK_CURRENT_BINARY_DIR})
