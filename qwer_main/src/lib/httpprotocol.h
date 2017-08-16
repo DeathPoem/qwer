@@ -4,7 +4,8 @@
 #include "tcpserver.h"
 #include "nettools.h"
 #include "multithread_version.h"
-//#include "../third_party/http-parser/http_parser.h"
+#include "../third_party/http-parser/http_parser.h"
+//#include "http_parser.h"
 
 namespace my_http {
 
@@ -156,18 +157,24 @@ private:
 
     //! read httprequest and write your httpresponse, then call to_lazy_close() if you want a non-persistent connection( close socket after response)
     //! this callback should be reentrancy one
-    using HttpCallBack = function<void(TCPConnection&, unique_ptr<HttpRequest>, shared_ptr<HttpResponse>)>;  //!< each request is created by each parse, but response can be a cashed object.
+    using HttpCallBack = function<void(TCPConnection&, shared_ptr<HttpRequest>, shared_ptr<HttpResponse>)>;  //!< each request is created by each parse, but response can be a cashed object.
+    using NextCallBack = function<void()>;
+    using MiddleWareCb = function<void(TCPConnection&, shared_ptr<HttpRequest>, shared_ptr<HttpResponse>, NextCallBack)>;
 
     //! thread safe http api holder and http request handler, thread safe for read operation
     class HttpSetting {
     public:
         HttpSetting();
         virtual ~HttpSetting();
+        //! this action should not block
         HttpSetting& set_action_of(string method, string uri, HttpCallBack&& cb);   //!< lock free
         HttpSetting& cash_response_of(string method, string uri, shared_ptr<HttpResponse> res_p);
-        void doit(unique_ptr<HttpRequest>&& http_request, TCPConnection& this_con);   //!< lock free until invoke HttpCallBack if HttpCallBack is not thread safe
+        void routeit(TCPConnection& this_con, shared_ptr<HttpRequest> http_request, shared_ptr<HttpResponse> http_response);   //!< lock free until invoke HttpCallBack if HttpCallBack is not thread safe
+        void middle_seq_of(shared_ptr<HttpRequest> http_request, TCPConnection& this_con);   
+        HttpSetting& use(MiddleWareCb&& cb);
     private:
         mutex mutex_;
+        vector<MiddleWareCb> middle_seq_;
         map<pair<string, string>, HttpCallBack> map_;
         map<pair<string, string>, shared_ptr<HttpResponse>> map_res_;
     };

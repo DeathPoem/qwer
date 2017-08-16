@@ -25,8 +25,13 @@ namespace my_http {
         return string() + GET_MY_COMPILE_ROOT_PATH + "/stuff/defaultdb";
     }
 
-    DBholder::DBholder(string dbpath) {
+    DBholder::DBholder(string dbpath) : 
+        db(dbpath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
 
+    }
+
+    SQLite::Column DBholder::SingleQuery(string qstr) {
+         return db.execAndGet(qstr.c_str());
     }
 
     DBholder::~DBholder() {

@@ -21,6 +21,7 @@ foreach(singletestfilename ${TESTFILES})
     message("==== do with file target : ${tn}")
     add_executable(${tn} ${singletestfilename})
     target_link_libraries(${tn} gtest gtest_main)
+    message(STATUS "link test target with MY_EXTRA_LIBS:${MY_EXTRA_LIBS}")
     target_link_libraries(${tn} ${MY_EXTRA_LIBS})
     add_test(NAME case-${tn} 
         COMMAND ${tn})

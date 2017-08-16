@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
+#include "config.h"
 #include "json.hpp"
+#include "SQLiteCpp/SQLiteCpp.h"
 
 static int static_func() {
     return 1;
@@ -27,6 +29,11 @@ TEST(test_case_0, json_config_test) {   //!< json
 
     };
     ASSERT_NE(j2, nullptr);
+}
+
+TEST(test_case_0, sqlite_test) {
+    std::string dbpath = std::string() + GET_MY_COMPILE_ROOT_PATH + "/stuff/defaultdb";
+    SQLite::Database db(dbpath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE);
 }
 
 int main(int argc, char **argv) {

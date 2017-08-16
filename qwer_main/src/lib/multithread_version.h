@@ -37,7 +37,7 @@ template <typename T>
 template <typename T>
     bool AcceptedQueue<T>::push_one(T&& one) {
         cur_++;
-        if (try_push(move(one), 5)) {
+        if (SyncQueue<T>::try_push(move(one), 5)) {
             return true;
         } else {
             NOTDONE();
@@ -51,7 +51,7 @@ template <typename T>
         T movetoit;
         vector<decltype(movetoit)> toreturn;
         for (int i = 0; i < amount; i++) {
-            try_pop(movetoit);
+            SyncQueue<T>::try_pop(movetoit);
             toreturn.push_back(move(movetoit));
         }
         cur_ -= toreturn.size();

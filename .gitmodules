@@ -7,3 +7,6 @@
 [submodule "qwer_main/third_party/http-parser"]
 	path = qwer_main/third_party/http-parser
 	url = https://github.com/nodejs/http-parser
+[submodule "qwer_main/third_party/SQLiteCpp"]
+	path = qwer_main/third_party/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp

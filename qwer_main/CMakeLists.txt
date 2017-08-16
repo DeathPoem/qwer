@@ -20,9 +20,16 @@ set(MY_ROOT_PATH ${http_practice_SOURCE_DIR})
 include_directories(
     ${http_practice_SOURCE_DIR}/third_party/json/src
     )
+###
+# http_parser
 include_directories(
     ${http_practice_SOURCE_DIR}/third_party/http_parser
     )
+
+### 
+#SQLitcpp
+add_subdirectory(${http_practice_SOURCE_DIR}/third_party/SQLiteCpp)
+include_directories( ${http_practice_SOURCE_DIR}/third_party/SQLiteCpp/include)
 
 ###
 # own stuff
@@ -31,7 +38,7 @@ include_directories(
     ${http_practice_SOURCE_DIR}/src/lib
     )
 add_subdirectory(src)
-set(MY_EXTRA_LIBS ${MY_EXTRA_LIBS} my_library)
+set(MY_EXTRA_LIBS ${MY_EXTRA_LIBS} my_library SQLiteCpp sqlite3 ${CMAKE_DL_LIBS})   #https://gist.github.com/kwk/3595733
 
 ##########
 # test

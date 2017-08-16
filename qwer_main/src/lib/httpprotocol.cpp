@@ -14,8 +14,8 @@ HttpMsg::HttpMethod HttpMsg::str2Method(string s) {
     }
 }
 
-    static const string HttpMsg::CRLF_ = "\r\n";
-    static const string HttpMsg::HTML_NEWLINE_ = string(u8"\u8629");
+    const string HttpMsg::CRLF_ = "\r\n";
+    const string HttpMsg::HTML_NEWLINE_ = string(u8"\u8629");
 
 HttpMsg::HttpVersion HttpMsg::str2Version(string s) {
     if (s == "HTTP/1.1") {
@@ -286,10 +286,10 @@ void HttpResponse::swap(HttpResponse&& other) {
               p_httpsetting_(http_s_) {
         tcp_server_p_->set_tcp_callback([this](TCPConnection& this_con) {
                     LOG_DEBUG("httpserver tcp callback");
-                    unique_ptr<HttpRequest> http_request(new HttpRequest());
+                    shared_ptr<HttpRequest> http_request(new HttpRequest());
                     this_con.get_rb_ref().consume(
                             http_request->to_decode(this_con.get_rb_ref()));
-                    p_httpsetting_->doit(move(http_request), this_con);
+                    p_httpsetting_->middle_seq_of(http_request, this_con);
                 });
     }
 
@@ -325,15 +325,37 @@ void HttpResponse::swap(HttpResponse&& other) {
         return *this;
     }
 
-    void HttpSetting::doit(unique_ptr<HttpRequest>&& http_request, TCPConnection &this_con) {
+    HttpSetting& HttpSetting::use(MiddleWareCb&& cb) {
+        middle_seq_.push_back(cb);
+        return *this;
+    }
+
+    void HttpSetting::middle_seq_of(shared_ptr<HttpRequest> http_request, TCPConnection &this_con) {
+            shared_ptr<HttpResponse> http_response(new HttpResponse);
+            if (middle_seq_.empty()) {
+                routeit(this_con, http_request, http_response);
+            } else {
+                int if_next = 0;
+                int if_should = 0;
+                for (auto& ref_f : middle_seq_) {
+                    if (if_next < if_should++) {
+                        break;
+                    } else {
+                        ref_f(this_con, http_request, http_response, [&if_next](){if_next++;});
+                    }
+                }
+                routeit(this_con, http_request, http_response);
+            }
+    }
+
+    void HttpSetting::routeit(TCPConnection &this_con, shared_ptr<HttpRequest> http_request, shared_ptr<HttpResponse> http_response) {
         pair<string, string> key = make_pair(
                 http_request->get_method_str(),
                 http_request->uri_);
-        assert(!map_.empty());
+        //assert(!map_.empty());
         auto found = map_.find(key);
         if (found != map_.end()) {
             auto& func_ref = map_[key];
-            shared_ptr<HttpResponse> http_response;
             auto found2 = map_res_.find(key);
             if (found2 != map_res_.end()) {http_response = map_res_[key];}
             func_ref(this_con, move(http_request), http_response);
@@ -341,7 +363,8 @@ void HttpResponse::swap(HttpResponse&& other) {
             size_t count = http_response->to_encode(this_con.get_wb_ref());
             LOG_DEBUG("encode %d", count);
         } else {
-            SLOG_WARN("unsuccessful http response" << ",method " << get<0>(key) << ",uri " << get<1>(key));
-        }
+            SLOG_WARN("unsuccessful http response" << ",method " << get<0>(key) << ",uri " << get<1>(key) << ", close this.");
+            this_con.to_lazy_close();
+        } 
     }
 } /* my_http */

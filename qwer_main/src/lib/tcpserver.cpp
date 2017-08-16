@@ -445,6 +445,7 @@ TCPConnection& TCPConnection::set_seqno_of_server(uint32_t seqno) {
 
 uint32_t TCPConnection::get_seqno() { return seqno_; }
 
+// TODO 做一个类似nginx的延迟关闭 lingering_close 
 void TCPConnection::local_close() {
     if (tcpstate_ == TCPSTATE::Localclosed) {
         return;
