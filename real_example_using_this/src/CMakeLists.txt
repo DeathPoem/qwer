@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
-include_directories(${online_example_SOURCE_DIR}/${QWER_LIBRARY_ROOT}/src/lib) # would include my_library 
+include_directories(${QWER_INCLUDES})
 
 file(GLOB MYAPP "./*.cpp")
 add_executable(myapp ${MYAPP})
-target_link_libraries(myapp ${my_extra_libs})
+message("link library for app: ${X_MY_EXTRA_LIBS}")
+target_link_libraries(myapp ${X_MY_EXTRA_LIBS})

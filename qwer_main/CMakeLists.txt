@@ -15,30 +15,34 @@ set(CMAKE_BUILD_TYPE DEBUG)
 # build
 project(http_practice)
 set(MY_ROOT_PATH ${http_practice_SOURCE_DIR})
+# QWER_INCLUDES is for user who set this CMakeLists.txt as subdirs, please include this TODO
+set(QWER_INCLUDES ${QWER_INCLUDES} 
+    ${http_practice_SOURCE_DIR}/third_party/json/src 
+    ${http_practice_SOURCE_DIR}/third_party/http-parser 
+    ${http_practice_SOURCE_DIR}/third_party/SQLiteCpp/include 
+    ${http_practice_SOURCE_DIR}/src 
+    ${http_practice_SOURCE_DIR}/src/lib
+    PARENT_SCOPE)
 ###
 # json
-include_directories(
-    ${http_practice_SOURCE_DIR}/third_party/json/src
-    )
+include_directories(${http_practice_SOURCE_DIR}/third_party/json/src)
 ###
 # http_parser
-include_directories(
-    ${http_practice_SOURCE_DIR}/third_party/http_parser
-    )
+include_directories(${http_practice_SOURCE_DIR}/third_party/http-parser)
 
 ### 
 #SQLitcpp
 add_subdirectory(${http_practice_SOURCE_DIR}/third_party/SQLiteCpp)
-include_directories( ${http_practice_SOURCE_DIR}/third_party/SQLiteCpp/include)
+include_directories(${http_practice_SOURCE_DIR}/third_party/SQLiteCpp/include)
 
 ###
 # own stuff
-include_directories(
-    ${http_practice_SOURCE_DIR}/src
-    ${http_practice_SOURCE_DIR}/src/lib
-    )
+include_directories(${http_practice_SOURCE_DIR}/src ${http_practice_SOURCE_DIR}/src/lib)
+
 add_subdirectory(src)
-set(MY_EXTRA_LIBS ${MY_EXTRA_LIBS} my_library SQLiteCpp sqlite3 ${CMAKE_DL_LIBS})   #https://gist.github.com/kwk/3595733
+# QWER_LIBS is for user who set this CMakeLists.txt as subdirs
+set(QWER_LIBS ${MY_EXTRA_LIBS} my_library SQLiteCpp sqlite3 ${CMAKE_DL_LIBS} PARENT_SCOPE)   #https://gist.github.com/kwk/3595733
+set(MY_EXTRA_LIBS my_library SQLiteCpp sqlite3 ${CMAKE_DL_LIBS})
 
 ##########
 # test

@@ -4,8 +4,8 @@
 #include "tcpserver.h"
 #include "nettools.h"
 #include "multithread_version.h"
-#include "../third_party/http-parser/http_parser.h"
-//#include "http_parser.h"
+//#include "../third_party/http-parser/http_parser.h"
+#include "http_parser.h"
 
 namespace my_http {
 
@@ -184,7 +184,7 @@ class HttpServer<MultiServer> : public noncopyable {
 public:
     HttpServer (size_t idle, Ipv4Addr listen_ip, shared_ptr<HttpSetting> httpsetting);
     virtual ~HttpServer ();
-    void Start(function<bool()>&& checker = nullptr);
+    void Start(function<bool()>&& checker = nullptr); //!< wait for checher return true
     void Exit();
 private:
     shared_ptr<HttpSetting> p_httpsetting_;

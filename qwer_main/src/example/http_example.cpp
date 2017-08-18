@@ -36,8 +36,8 @@ int deamon_0() {
 //! @brief multi thread server
 int deamon_1() {
     // set log
-    LOG_SET_FILE_P("./tmp_log.txt", false);
-    LOG_SET_LEVEL("DEBUG");
+    LOG_SET_FILE_P("./tmp_log.txt", true);
+    LOG_SET_LEVEL("WARN");
     LOG_DEBUG(" \n \n in test_multithread");
     // 
     // set http api
@@ -62,8 +62,8 @@ int deamon_1() {
     // serve and block until functor return true;
     cout << "begin server" << endl;
     httpserver.Start([](){
-                std::this_thread::sleep_for(10000ms);   //!< sleep of this command thread won't affect threads in pool
-                return true;
+                std::this_thread::sleep_for(1000000ms);   //!< sleep of this command thread won't affect threads in pool
+                return false;
             });
     cout << "end of server" << endl;
     httpserver.Exit();
@@ -81,7 +81,7 @@ int deamon_2() {
             httpsettings);
 
     // DBholder is a very simple SQLiteCpp wrapper
-    DBholder mydb("example.db3");
+    DBholder mydb;
     httpsettings->use([&mydb](TCPConnection& this_con, shared_ptr<HttpRequest> req, shared_ptr<HttpResponse> res, NextCallBack next) {
                 mydb.SingleQuery("SELECT value FROM test WHERE id=2");
                 next(); //!< don't invoke next would cause other MiddleWareCb unable to be invoked

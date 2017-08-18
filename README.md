@@ -46,6 +46,11 @@ int deamon_1() {
 int main() { return deamon_1(); }
 ```
 
+# Main featur
+
+0. supporting single thread and multithread
+1. supporting http server.
+
 # Install & and Usage
 
 * compile:
@@ -56,11 +61,14 @@ int main() { return deamon_1(); }
         ../runme_instead_of_cmake.sh // or cmake ..
         make && make check // or ctest -V
 
-* add dependency in your CMakeLists.txt:
+* add dependency in your CMakeLists.txt easily:
 
-    //TODO
+```cmake
+        add_subdirectoryy(${QWER_LIBRARY_ROOT})
+        include_directories(${QWER_INCLUDES})
+```
 
-* using wrk to benchmark this project :
+* using wrk to benchmark "real_example_using_this":
 
         Running 30s test @ http://127.0.0.1:8080/hello.html
           2 threads and 200 connections
