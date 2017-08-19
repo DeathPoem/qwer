@@ -36,7 +36,7 @@ int deamon_0() {
 //! @brief multi thread server
 int deamon_1() {
     // set log
-    LOG_SET_FILE_P("./tmp_log.txt", true);
+    LOG_SET_FILE_P("./tmp_log.txt", false);
     LOG_SET_LEVEL("WARN");
     LOG_DEBUG(" \n \n in test_multithread");
     // 
