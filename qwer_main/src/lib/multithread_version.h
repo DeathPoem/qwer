@@ -110,7 +110,7 @@ public:
     void ThreadPoolStart(function<bool()>&& block_checker = nullptr);
     void Exit();
 private:
-    std::function<void()> get_fetch_routine(map<size_t, shared_ptr<TCPConnection>>& tcpcon_map, EventManagerWrapper& emwp, size_t& seqno);
+    std::function<void()> get_fetch_routine(unordered_map<size_t, shared_ptr<TCPConnection>>& tcpcon_map, EventManagerWrapper& emwp, size_t& seqno);
     void MsgServerRoutineDetail();    //!< we would put event.exit into stop_vec
     void AcceptorRoutineDetail();     //!< we would put event.exit into stop_vec
     bool FetchOne(vector<pair<FileDescriptorType, Ipv4Addr>>& toit);

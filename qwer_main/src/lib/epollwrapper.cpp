@@ -72,18 +72,14 @@ namespace my_http {
                 Channel* p_ch = static_cast<Channel*>(epoll_vec_[ready].data.ptr);
                 int active_event = epoll_vec_[ready].events;
                 if (p_ch) {
-                    if (emp_ != nullptr) {
-                        if (active_event == Channel::get_readonly_event_flag()) {
-                            emp_->add_active_event(EventEnum::IORead, p_ch);
-                        } else if (active_event == Channel::get_writeonly_event_flag()) {
-                            emp_->add_active_event(EventEnum::IOWrite, p_ch);
-                        } else if (active_event & Channel::get_peer_shutdown_flag()) {
-                            emp_->add_active_event(EventEnum::PeerShutDown, p_ch);
-                        } else if (active_event & Channel::get_err_flag()) {
-                            emp_->add_active_event(EventEnum::Error, p_ch);
-                        } else {
-                            NOTDONE();
-                        }
+                    if (active_event == Channel::get_readonly_event_flag()) {
+                        p_ch->act(EventEnum::IORead);
+                    } else if (active_event == Channel::get_writeonly_event_flag()) {
+                        p_ch->act(EventEnum::IOWrite);
+                    } else if (active_event & Channel::get_peer_shutdown_flag()) {
+                        p_ch->act(EventEnum::PeerShutDown);
+                    } else if (active_event & Channel::get_err_flag()) {
+                        p_ch->act(EventEnum::Error);
                     } else {
                         NOTDONE();
                     }
@@ -93,7 +89,6 @@ namespace my_http {
             }
             complete_once = true;
         }
-        emp_->handle_active_event();
     }
 
 } /* my_http */ 

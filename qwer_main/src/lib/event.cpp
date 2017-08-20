@@ -1,21 +1,6 @@
 #include "event.h"
 
 namespace my_http {
-
-    std::ostream& operator<<(std::ostream& os, EventEnum e) {
-        if (e == EventEnum::IORead) {
-            os << "IORead";
-        } else if (e == EventEnum::IOWrite) {
-            os << "IOWrite";
-        } else if (e == EventEnum::PeerShutDown) {
-            os << "PeerShutDown";
-        } else if (e == EventEnum::Error) {
-            os << "Error";
-        } else {
-            NOTDONE();
-        }
-    }
-
     EventManager::EventManager() : io_demultiplexer_(new epollwrapper(this)),
     exit_(false),
     my_timer_queue_(new TimerQueue(*this)) {
@@ -35,7 +20,7 @@ namespace my_http {
     void EventManager::register_event(uint32_t event, Channel* p_ch, CallBack&& cb) {
         LOG_INFO("enter EventManager::register_event");
         p_ch->add_event(event);
-        event_call_back_map_[make_pair(uint2enum(event), p_ch)] = std::move(cb);
+        p_ch->add_cb(event, move(cb));
         io_demultiplexer_->AddChannel(p_ch);
     }
 
@@ -43,23 +28,12 @@ namespace my_http {
         LOG_INFO("enter EventManager::remove_registered_event");
         p_ch->delete_event(event);
         io_demultiplexer_->ModChannel(p_ch);
-        auto found = event_call_back_map_.find(make_pair(uint2enum(event), p_ch));
-        event_call_back_map_.erase(found);
     }
 
     void EventManager::remove_channel(Channel *p_ch) {
         LOG_INFO("enter EventManager::remove_registered_event");
         io_demultiplexer_->DelChannel(p_ch);
         p_ch->delete_event(p_ch->get_events());
-        vector<pair<EventEnum, Channel*>> to_delete_vec;
-        for_each(event_call_back_map_.begin(), event_call_back_map_.end(), [&to_delete_vec, p_ch](auto x_p){
-            if (get<1>(get<0>(x_p)) == p_ch) {
-                to_delete_vec.push_back(get<0>(x_p));
-            }
-        });
-        for (auto td : to_delete_vec) {
-            event_call_back_map_.erase(event_call_back_map_.find(td));
-        }
     }
     
     void EventManager::loop_once(time_ms_t timeout) {
@@ -100,11 +74,13 @@ namespace my_http {
     
     void EventManager::start_up() {}
 
+    /*
     void EventManager::add_active_event(EventEnum para_enum, Channel* p_ch) {
         SLOG_INFO("enter EventManager::add_active_event" << ";event=" << para_enum);
-        active_channels_.push_back(make_pair(para_enum, p_ch));
     }
+    */
 
+    /*
     void EventManager::handle_active_event() {
         LOG_INFO("enter EventManager::handle_active_event : active_channels_.size() = %d; event_call_back_map_.size() = %d", 
                 active_channels_.size(), 
@@ -120,6 +96,7 @@ namespace my_http {
         active_channels_.clear();
         assert(active_channels_.size() == 0);
     }
+    */
 
     thread_local EventManagerWrapper* this_thread_emw_p_thread_local = nullptr;
 
@@ -150,39 +127,6 @@ namespace my_http {
 
     void EventManagerWrapper::register_event(uint32_t event, Channel* p_ch, CallBack&& cb) {
         pimpl_->register_event(event, p_ch, std::move(cb));
-    }
-
-    uint32_t enum2uint(EventEnum eventenum) {
-        uint32_t event;
-
-        if (eventenum == EventEnum::IORead) {
-            event = Channel::get_readonly_event_flag();
-        } else if (eventenum == EventEnum::IOWrite) {
-            event = Channel::get_writeonly_event_flag();
-        } else if (eventenum == EventEnum::PeerShutDown) {
-            event = Channel::get_peer_shutdown_flag();
-        } else if (eventenum == EventEnum::Error) {
-            event = Channel::get_err_flag();
-        } else {
-            NOTDONE();
-        }
-        return event;
-    }
-
-    EventEnum uint2enum(uint32_t event) {
-        EventEnum para_enum;
-        if (event == Channel::get_readonly_event_flag()) {
-            para_enum = EventEnum::IORead;
-        } else if (event == Channel::get_writeonly_event_flag()) {
-            para_enum = EventEnum::IOWrite;
-        } else if (event == Channel::get_peer_shutdown_flag()) {
-            para_enum = EventEnum::PeerShutDown;
-        } else if (event == Channel::get_err_flag()) {
-            para_enum = EventEnum ::Error;
-        } else {
-            NOTDONE();
-        }
-        return para_enum;
     }
 
     void EventManagerWrapper::loop() {

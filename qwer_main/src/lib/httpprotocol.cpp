@@ -104,7 +104,6 @@ size_t HttpMsg::try_decode_of(Buffer& buffer,
         buffer.read_from_buffer(content, size);
         size_t cur = 0;
         size_t scaned = 0;
-        size_t head_map_n = 0;
         bool noheaders = false;
         bool endone = false;
         assert(*(content + size - 1) != '\r');
@@ -139,16 +138,14 @@ size_t HttpMsg::try_decode_of(Buffer& buffer,
                                                         string(":"));
                     assert(check >= 1);
                     if (check == 1) {
-                        headers_lines_ref[head_map_n++] =
-                            make_pair(header_tokens[0], header_tokens[1]);
+                        headers_lines_ref.emplace_back(header_tokens[0], header_tokens[1]);
                     } else {
                         string rest = header_tokens[1];
                         for (int i = 1; i < check; i++) {
                             rest += ":";
                             rest += header_tokens[i + 1];
                         }
-                        headers_lines_ref[head_map_n++] =
-                            make_pair(header_tokens[0], rest);
+                        headers_lines_ref.emplace_back(header_tokens[0], rest);
                     }
                 }
                 scaned = endone ? scaned : cur + CRLF_.size();

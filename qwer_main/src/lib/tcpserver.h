@@ -17,6 +17,10 @@
 
 namespace my_http {
 
+#ifndef X_MAXTCPCON
+#define X_MAXTCPCON 8000
+#endif /* ifndef X_MAXTCPCON */
+
 namespace detail {
 int create_socketfd();
 //TODO
@@ -153,7 +157,7 @@ private:
 
 class TCPServer : private noncopyable {
 public:
-    TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip, uint32_t maxtcpcon = 800);
+    TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip, uint32_t maxtcpcon = X_MAXTCPCON);
     virtual ~TCPServer();
     TCPServer& set_tcpcon_after_connected_callback(TCPCallBack&& cb); // this interface is not essential
     // using this API, you should store seqno or get_shared_tcpcon_ref_by_seqno and get peer name and register_cb_for_con_of_seqno in msg_responser_.
@@ -174,7 +178,7 @@ private:
     const Ipv4Addr listen_ip_;
     uint32_t seqno_;
     unique_ptr<Acceptor> unip_acceptor_;
-    map<uint32_t, shared_ptr<TCPConnection>> tcpcon_map_;
+    unordered_map<uint32_t, shared_ptr<TCPConnection>> tcpcon_map_;
 };
 
 class TCPClient : private noncopyable {

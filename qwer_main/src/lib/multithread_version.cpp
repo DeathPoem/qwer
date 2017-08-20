@@ -132,7 +132,7 @@ void MultiServer::AcceptorRoutineDetail() {
 void MultiServer::MsgServerRoutineDetail() {
     EventManagerWrapper emw;
     size_t seqno = 0;
-    map<size_t, shared_ptr<TCPConnection>> tcpcon_map;
+    unordered_map<size_t, shared_ptr<TCPConnection>> tcpcon_map;
     auto fetch_routine = get_fetch_routine(tcpcon_map, emw, seqno);
     emw.run_after(100, move(fetch_routine), idle_duration_);
     LOG_DEBUG("before routine ");
@@ -145,7 +145,7 @@ void MultiServer::MsgServerRoutineDetail() {
 }
 
     //! @brief a routine fetch accepted fd and set epoll at local eventmanager
-    std::function<void()> MultiServer::get_fetch_routine(map<size_t, shared_ptr<TCPConnection>>& tcpcon_map, EventManagerWrapper& emw, size_t& seqno) {
+    std::function<void()> MultiServer::get_fetch_routine(unordered_map<size_t, shared_ptr<TCPConnection>>& tcpcon_map, EventManagerWrapper& emw, size_t& seqno) {
         return [this, &tcpcon_map, &emw, &seqno](){
             vector<pair<FileDescriptorType, Ipv4Addr>> newpairs;
             if (FetchOne(newpairs)) {

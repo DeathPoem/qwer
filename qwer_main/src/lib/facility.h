@@ -203,6 +203,15 @@ using FileDescriptorType = int;
             };
     };
 
+    // translate from Event to EventEnum in EventManagerWrapper::register_event()
+    enum class EventEnum {IODemultiplexCB, IORead, IOWrite,
+                        Timeout, PeerShutDown, Error};
+
+    std::ostream& operator<<(std::ostream&, EventEnum);
+
+    EventEnum uint2enum(uint32_t event);
+    uint32_t enum2uint(EventEnum eventenum);
+
     // name it as 'channel', which wraps the operation of fd that can be epoll or poll
     class Channel : private noncopyable {
         public:
@@ -214,14 +223,17 @@ using FileDescriptorType = int;
             //struct epoll_event* get_epoll_event_p(); this is not good, because if you return a heap pointer, the caller would be responsible to delete it.
             // following would be more good
             uint32_t get_events();
-            static uint32_t get_readonly_event_flag();
-            static uint32_t get_writeonly_event_flag();
-            static uint32_t get_edge_trigger_flag();
-            static uint32_t get_peer_shutdown_flag();
-            static uint32_t get_err_flag();
+            constexpr static uint32_t get_readonly_event_flag();
+            constexpr static uint32_t get_writeonly_event_flag();
+            constexpr static uint32_t get_edge_trigger_flag();
+            constexpr static uint32_t get_peer_shutdown_flag();
+            constexpr static uint32_t get_err_flag();
             void add_event(uint32_t para_event);
             void delete_event(uint32_t para_event);
+            void act(EventEnum event);
+            void add_cb(uint32_t event, CallBack&& cb);
         private:
+            vector<CallBack> cbvec_ = vector<CallBack>(4, [](){});
             int fd_;
             uint32_t event_;
             bool is_closed_ = false;

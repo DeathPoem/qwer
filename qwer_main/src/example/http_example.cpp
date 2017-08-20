@@ -7,13 +7,12 @@ using namespace my_http;
 //! @brief single thread server
 int deamon_0() {
     LOG_SET_FILE_P("./tmp_log.txt", false);
-    LOG_SET_LEVEL("DEBUG");
-    LOG_DEBUG(" \n \n in test_multithread");
+    LOG_SET_LEVEL("WARN");
     EventManagerWrapper emw;
     HttpResponse x_http_response;
     x_http_response.version_ = HttpMsg::HttpVersion ::Http1_1;
     x_http_response.statuscode_ = HttpMsg::HttpStatusCodes::c_200;
-    x_http_response.headers_lines_[0] = make_pair("Connection", " close");
+    x_http_response.headers_lines_.emplace_back("Connection", " close");
     x_http_response.body_ = string("<html><body>") +
             string("<h1>Hello, World!</h1>") +
             string("</body></html>") ;
@@ -24,11 +23,11 @@ int deamon_0() {
                 this_con.to_lazy_close();
             }).set_httpresponse(std::move(x_http_response));
     cout << "begin server" << endl;
-    for (int i = 0; i < 3600; ++i) {
+    for (int i = 0; i < 666600; ++i) {
         if (i % 60 == 0) {
             cout << "i = " << i << endl;
         }
-        emw.loop_once(200);
+        emw.loop_once(10);
     }
     cout << "end of server" << endl;
 }
@@ -44,7 +43,7 @@ int deamon_1() {
     shared_ptr<HttpResponse> x_http_response(new HttpResponse());
     x_http_response->version_ = HttpMsg::HttpVersion ::Http1_1;
     x_http_response->statuscode_ = HttpMsg::HttpStatusCodes::c_200;
-    x_http_response->headers_lines_[0] = make_pair("Connection", " close");
+    x_http_response->headers_lines_.emplace_back("Connection", " close");
     x_http_response->body_ = string("<html><body>") +
             string("<h1>Hello, World!</h1>") +
             string("</body></html>") ;  //!< you can also use FileReader("filename").to_string();
@@ -97,5 +96,5 @@ int deamon_2() {
 }
 
 int main() {
-    return deamon_1();
+    return deamon_0();
 }

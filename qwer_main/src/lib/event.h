@@ -13,15 +13,6 @@ namespace my_http {
 
     class IODemultiplexerInterface;
 
-    // translate from Event to EventEnum in EventManagerWrapper::register_event()
-    enum class EventEnum {IODemultiplexCB, IORead, IOWrite,
-                        Timeout, PeerShutDown, Error};
-
-    std::ostream& operator<<(std::ostream&, EventEnum);
-
-    EventEnum uint2enum(uint32_t event);
-    uint32_t enum2uint(EventEnum eventenum);
-
     class EventManager : private noncopyable {
         public:
             EventManager();
@@ -34,15 +25,12 @@ namespace my_http {
             TimerId run_after(time_ms_t para_t, CallBack&& cb, time_ms_t interval = 0); //!< interval = 0 means that it's not an period task
             void loop();
             void loop_once(time_ms_t timeout);
-            void add_active_event(EventEnum para_enum, Channel* p_ch);
-            void handle_active_event();
+            //void add_active_event(EventEnum para_enum, Channel* p_ch);
+            //void handle_active_event();
             void start_up();
             void exit();
         private:
-            // TODO we need hash
-            map<pair<EventEnum, Channel*>, CallBack> event_call_back_map_;
             unique_ptr<IODemultiplexerInterface> io_demultiplexer_;
-            vector<pair<EventEnum, Channel*>> active_channels_;
             unique_ptr<TimerQueue> my_timer_queue_;
             bool exit_;
             /* data */

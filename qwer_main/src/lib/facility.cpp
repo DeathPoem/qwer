@@ -293,15 +293,44 @@ namespace my_http {
 
     void Channel::add_event(uint32_t para_event) {event_ |= para_event;}
 
-    uint32_t Channel::get_readonly_event_flag() {return EPOLLIN;}
+    constexpr uint32_t Channel::get_readonly_event_flag() {return EPOLLIN;}
 
-    uint32_t Channel::get_writeonly_event_flag() {return EPOLLOUT;}
+    constexpr uint32_t Channel::get_writeonly_event_flag() {return EPOLLOUT;}
 
-    uint32_t Channel::get_peer_shutdown_flag(){return EPOLLRDHUP;}
+    constexpr uint32_t Channel::get_peer_shutdown_flag(){return EPOLLRDHUP;}
 
-    uint32_t Channel::get_edge_trigger_flag() { return EPOLLET;}
+    constexpr uint32_t Channel::get_edge_trigger_flag() { return EPOLLET;}
 
-    uint32_t Channel::get_err_flag() { return  EPOLLERR;}
+    constexpr uint32_t Channel::get_err_flag() { return  EPOLLERR;}
+
+    void Channel::add_cb(uint32_t event, CallBack&& cb) {
+        if (event == Channel::get_readonly_event_flag()) {
+            cbvec_[0] = cb;
+        } else if (event == Channel::get_writeonly_event_flag()) {
+            cbvec_[1] = cb;
+        } else if (event == Channel::get_peer_shutdown_flag()) {
+            cbvec_[2] = cb;
+        } else if (event == Channel::get_err_flag()) {
+            cbvec_[3] = cb;
+        } else {
+            NOTDONE();
+        }
+    }
+
+    void Channel::act(EventEnum event) {
+        auto event_s = enum2uint(event);
+        if (event_s == Channel::get_readonly_event_flag()) {
+            cbvec_[0]();
+        } else if (event_s == Channel::get_writeonly_event_flag()) {
+            cbvec_[1]();
+        } else if (event_s == Channel::get_peer_shutdown_flag()) {
+            cbvec_[2]();
+        } else if (event_s == Channel::get_err_flag()) {
+            cbvec_[3]();
+        } else {
+            NOTDONE();
+        }
+    }
 
     void set_nonblock(int fd) {
         int flags = fcntl(fd, F_GETFL, 0);
@@ -313,6 +342,55 @@ namespace my_http {
             NOTDONE();
         }
     }
+
+    uint32_t enum2uint(EventEnum eventenum) {
+        uint32_t event;
+
+        if (eventenum == EventEnum::IORead) {
+            event = Channel::get_readonly_event_flag();
+        } else if (eventenum == EventEnum::IOWrite) {
+            event = Channel::get_writeonly_event_flag();
+        } else if (eventenum == EventEnum::PeerShutDown) {
+            event = Channel::get_peer_shutdown_flag();
+        } else if (eventenum == EventEnum::Error) {
+            event = Channel::get_err_flag();
+        } else {
+            NOTDONE();
+        }
+        return event;
+    }
+
+    EventEnum uint2enum(uint32_t event) {
+        EventEnum para_enum;
+        if (event == Channel::get_readonly_event_flag()) {
+            para_enum = EventEnum::IORead;
+        } else if (event == Channel::get_writeonly_event_flag()) {
+            para_enum = EventEnum::IOWrite;
+        } else if (event == Channel::get_peer_shutdown_flag()) {
+            para_enum = EventEnum::PeerShutDown;
+        } else if (event == Channel::get_err_flag()) {
+            para_enum = EventEnum ::Error;
+        } else {
+            NOTDONE();
+        }
+        return para_enum;
+    }
+
+    std::ostream& operator<<(std::ostream& os, EventEnum e) {
+        if (e == EventEnum::IORead) {
+            os << "IORead";
+        } else if (e == EventEnum::IOWrite) {
+            os << "IOWrite";
+        } else if (e == EventEnum::PeerShutDown) {
+            os << "PeerShutDown";
+        } else if (e == EventEnum::Error) {
+            os << "Error";
+        } else {
+            NOTDONE();
+        }
+    }
+
+
 } /* my_http */ 
 
 #endif /* ifndef FACILITY_CPP */

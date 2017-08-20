@@ -528,14 +528,13 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                         }
                         this_con.do_lazy_close();
                     } else {
-                        //FIXME is this right?
                         if (this_con.get_state() == TCPSTATE::Peerclosed) {
                             LOG_WARN("no bytes to read in read cb, if it's level triggered, it means peer close, we gonna to local_close this");       // if you use level triggered, it's the problem
                             this_con.local_close();
-                        } else if (this_con.get_state() == TCPSTATE::Localclosed){
+                        } else if (this_con.get_state() == TCPSTATE::Localclosed) {
                             NOTDONE();
                         } else {
-                            LOG_ERROR("??");
+                            LOG_ERROR("???");
                             this_con.local_close();
                         }
                     }
@@ -560,7 +559,7 @@ TCPServer::~TCPServer() {
             break;
         }
         default: {
-            LOG_WARN("when server destruct, tcp con don't finish, unfinished con is %d", tcpcon_map_.size());
+            LOG_ERROR("when server destruct, tcp con don't finish, unfinished con is %d", tcpcon_map_.size());
             break;
         }
     }
@@ -570,11 +569,11 @@ void TCPServer::remove_tcpcon_by_seqno(uint32_t seqno) {
     auto found = tcpcon_map_.find(seqno);
     assert(tcpcon_map_[seqno].use_count() == 1);
     auto check = get<1>(*found)->get_state();
-    if (TCPSTATE::Peerclosed == check || TCPSTATE::Localclosed == check) {
+    if (TCPSTATE::Peerclosed == check || TCPSTATE::Localclosed == check ) {
         LOG_DEBUG("normal remove one tcpcon");
         tcpcon_map_.erase(found);
     } else {
-        SLOG_ERROR("not goddead, close it force " << get<1>(*found)->get_state());
+        SLOG_ERROR("this is not good dead, close it force " << get<1>(*found)->get_state());
         tcpcon_map_.erase(found);
     }
 }
