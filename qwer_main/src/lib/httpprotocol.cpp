@@ -78,9 +78,9 @@ size_t HttpRequest::to_encode(Buffer& buffer) {
     content +=
         Method2str(method_) + " " + uri_ + " " + Version2str(version_) + CRLF_;
     for (auto v : headers_lines_) {
-        content += get<0>(get<1>(v));
+        content += get<0>(v);
         content += ":";
-        content += get<1>(get<1>(v));
+        content += get<1>(v);
         content += CRLF_;
     }
     if (!body_.empty()) {
@@ -94,7 +94,7 @@ size_t HttpRequest::to_encode(Buffer& buffer) {
 
 size_t HttpMsg::try_decode_of(Buffer& buffer,
                               std::function<void(string)> const& func,
-                              map<int, pair<string, string>>& headers_lines_ref,
+                              vector<pair<string, string>>& headers_lines_ref,
                               HttpVersion& version_ref, string& body_ref) {
     size_t const size = buffer.get_readable_bytes();
     char* content = new char[size + 1];
@@ -189,9 +189,9 @@ size_t HttpResponse::to_encode(Buffer& buffer) {
     string content;
     content += Version2str(version_) + " " + Status2str(statuscode_) + CRLF_;
     for (auto v : headers_lines_) {
-        content += get<0>(get<1>(v));
+        content += get<0>(v);
         content += ":";
-        content += get<1>(get<1>(v));
+        content += get<1>(v);
         content += CRLF_;
     }
     if (!body_.empty()) {

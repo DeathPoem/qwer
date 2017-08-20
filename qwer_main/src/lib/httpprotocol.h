@@ -29,7 +29,7 @@ protected:
     string Version2str(HttpVersion hv);
     HttpStatusCodes str2Status(string s);
     string Status2str(HttpStatusCodes hs);
-    size_t try_decode_of(Buffer& buffer, std::function<void(string)> const & func, map<int, pair<string, string>> & headers_lines_ref, HttpVersion& version_ref, string & body_ref);
+    size_t try_decode_of(Buffer& buffer, std::function<void(string)> const & func, vector<pair<string, string>> & headers_lines_ref, HttpVersion& version_ref, string & body_ref);
 };
 
 class HttpRequest : public HttpMsg {
@@ -51,7 +51,7 @@ public:
     string uri_;
     HttpVersion version_ = HttpVersion::Invalid;
     HttpMethod method_;
-    map<int, pair<string, string>> headers_lines_;  // headers can't be empty
+    vector<pair<string, string>> headers_lines_;  // headers can't be empty
     string body_;
 };
 
@@ -79,7 +79,7 @@ public:
 
     HttpVersion version_ = HttpVersion::Invalid;
     HttpStatusCodes statuscode_;
-    map<int, pair<string, string>> headers_lines_;  // headers can't be empty
+    vector<pair<string, string>> headers_lines_;  // headers can't be empty
     string body_;
 };
 

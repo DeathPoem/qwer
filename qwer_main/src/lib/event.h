@@ -39,7 +39,7 @@ namespace my_http {
             void start_up();
             void exit();
         private:
-            // TODO we need a more safe and more effective key design
+            // TODO we need hash
             map<pair<EventEnum, Channel*>, CallBack> event_call_back_map_;
             unique_ptr<IODemultiplexerInterface> io_demultiplexer_;
             vector<pair<EventEnum, Channel*>> active_channels_;
