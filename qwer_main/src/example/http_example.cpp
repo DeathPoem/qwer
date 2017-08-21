@@ -12,10 +12,11 @@ int deamon_0() {
     HttpResponse x_http_response;
     x_http_response.version_ = HttpMsg::HttpVersion ::Http1_1;
     x_http_response.statuscode_ = HttpMsg::HttpStatusCodes::c_200;
-    x_http_response.headers_lines_.emplace_back("Connection", " close");
+    x_http_response.headers_lines_.emplace_back("Connection", " Keep-Alive");
     x_http_response.body_ = string("<html><body>") +
             string("<h1>Hello, World!</h1>") +
             string("</body></html>") ;
+    x_http_response.headers_lines_.emplace_back("Content-Length", " " + to_string(x_http_response.body_.size()));
     HttpServer<TCPServer> httpserver(&emw,
             Ipv4Addr(Ipv4Addr::host2ip_str("localhost"), 8080));
     httpserver.set_action_of("GET", "/hello.html", [&httpserver](TCPConnection& this_con){
@@ -43,10 +44,11 @@ int deamon_1() {
     shared_ptr<HttpResponse> x_http_response(new HttpResponse());
     x_http_response->version_ = HttpMsg::HttpVersion ::Http1_1;
     x_http_response->statuscode_ = HttpMsg::HttpStatusCodes::c_200;
-    x_http_response->headers_lines_.emplace_back("Connection", " close");
+    x_http_response->headers_lines_.emplace_back("Connection", " Keep-Alive");
     x_http_response->body_ = string("<html><body>") +
             string("<h1>Hello, World!</h1>") +
             string("</body></html>") ;  //!< you can also use FileReader("filename").to_string();
+    x_http_response->headers_lines_.emplace_back("Content-Length", " " + to_string(x_http_response->body_.size()));
     shared_ptr<HttpSetting> httpsettings(new HttpSetting());
     HttpServer<MultiServer> httpserver(100,
             Ipv4Addr(Ipv4Addr::host2ip_str("localhost"), 8080),

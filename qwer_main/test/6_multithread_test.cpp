@@ -66,7 +66,7 @@ TEST(test_case_5, test_http_in_threadpool) {
                 LOG_DEBUG("read from client");
                 msg_responser.do_it_for_con_of_seqno(seqno, rb, wb);
             });
-    ms.ThreadPoolStart();
+    ms.ThreadPoolStart([](){ return true;});
     std::this_thread::sleep_for(1000ms);
     auto client_thread = std::thread(x_client_thread_function);
     client_thread.join();

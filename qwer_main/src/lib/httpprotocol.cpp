@@ -225,24 +225,23 @@ void HttpRequest::get_test_default_one() {
     uri_ = "/hello.html";
     version_ = HttpVersion::Http1_1;
     assert(headers_lines_.empty());
-    headers_lines_[0] = make_pair(
-        "User-Agent", " Mozilla/4.0 (compatible; MSIE5.01; Windows NT)");
-    headers_lines_[1] = make_pair("Host", " www.tutorialspoint.com");
-    headers_lines_[2] = make_pair("Accept-Language", " en-us");
-    headers_lines_[3] = make_pair("Accept-Encoding", " gzip, deflate");
-    headers_lines_[4] = make_pair("Connection", " Keep-Alive");
+    headers_lines_.emplace_back( "User-Agent", " Mozilla/4.0 (compatible; MSIE5.01; Windows NT)" );
+    headers_lines_.emplace_back("Host", " www.tutorialspoint.com");
+    headers_lines_.emplace_back("Accept-Language", " en-us");
+    headers_lines_.emplace_back("Accept-Encoding", " gzip, deflate");
+    headers_lines_.emplace_back("Connection", " Keep-Alive");
 }
 
 void HttpResponse::get_test_default_one() {
     version_ = HttpVersion::Http1_1;
     statuscode_ = HttpStatusCodes::c_200;
     assert(headers_lines_.empty());
-    headers_lines_[0] = make_pair("Date", " Mon, 27 Jul 2009 12:28:53 GMT");
-    headers_lines_[1] = make_pair("Server", " Apache/2.2.14 (Win32)");
-    headers_lines_[2] = make_pair("Last-Modified", " Wed, 22 Jul 2009 19:15:56 GMT");
-    headers_lines_[3] = make_pair("Content-Length", " 88");
-    headers_lines_[4] = make_pair("Content-Type", " text/html");
-    headers_lines_[5] = make_pair("Connection", " Closed");
+    headers_lines_.emplace_back("Date", " Mon, 27 Jul 2009 12:28:53 GMT");
+    headers_lines_.emplace_back("Server", " Apache/2.2.14 (Win32)");
+    headers_lines_.emplace_back("Last-Modified", " Wed, 22 Jul 2009 19:15:56 GMT");
+    headers_lines_.emplace_back("Content-Length", " 88");
+    headers_lines_.emplace_back("Content-Type", " text/html");
+    headers_lines_.emplace_back("Connection", " Closed");
     body_ = string("<html>") + HTML_NEWLINE_ + string("<body>") +
             HTML_NEWLINE_ + string("<h1>Hello, World!</h1>") + HTML_NEWLINE_ +
             string("</body>") + HTML_NEWLINE_ + string("</html>") +

@@ -1,6 +1,7 @@
 #ifndef FACILITY_H
 #define FACILITY_H 
 
+#include "qwerset.h"
 #include "config.h"
 #include <time.h>
 #include <sys/types.h>

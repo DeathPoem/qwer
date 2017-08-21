@@ -53,10 +53,16 @@ int detail::set_socket_no_linger(int fd) {
 
 int detail::set_socket_addr_reuse(int fd) {
     int optval = 1;
+    /* allow server to reuse address when binding */
     int z = ::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0;
     if (z < 0) {
         perror("setsocket addr reuse");
     }
+   /* allows UDP and TCP to reuse port (and address) when binding */
+    z = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+    if (z < 0) {
+        perror("setsockopt SO_REUSEPORT"); 
+    } 
     return z;
 }
 
@@ -132,6 +138,9 @@ void Acceptor::listen_it_and_accept() {
     if (detail::set_socket_addr_reuse(listened_socket_->get_fd()) < 0) {
         LOG_ERROR("can't addr reuse");
     }
+#ifdef X_SO_LINGER
+    if (detail::set_socket_no_linger(listened_socket_->get_fd()) < 0) { LOG_ERROR("can't linger"); }
+#endif
     listened_ip_.ip_bind_socketfd(listened_socket_->get_fd());
     auto check = ::listen(listened_socket_->get_fd(), SOMAXCONN);
     if (check != 0) {

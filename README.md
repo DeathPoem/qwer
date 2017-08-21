@@ -70,6 +70,8 @@ int main() { return deamon_1(); }
 
 * using wrk to benchmark "real_example_using_this":
 
+> using common TCP 4 hands close, which would cause too many socket TIME_WAIT
+
         Running 30s test @ http://127.0.0.1:8080/hello.html
           2 threads and 200 connections
           Thread Stats   Avg      Stdev     Max   +/- Stdev
@@ -79,6 +81,18 @@ int main() { return deamon_1(); }
           Socket errors: connect 265, read 28798, write 0, timeout 0
         Requests/sec:    958.50
         Transfer/sec:     82.37KB
+
+> if you compile with SO_LINGER or some way avoid '4 hands close' like tell wrk 'Keep-Alive' and close socket on your back, socket would end up with RST and rise the QPS
+
+        Running 30s test @ http://127.0.0.1:8080/hello.html
+          1 threads and 100 connections
+          Thread Stats   Avg      Stdev     Max   +/- Stdev
+            Latency    55.11us  168.17us   8.66ms   97.96%
+            Req/Sec    14.73k     3.62k   20.46k    64.76%
+          332716 requests in 30.01s, 35.86MB read
+          Socket errors: connect 0, read 332717, write 7, timeout 0
+        Requests/sec:  11086.55
+        Transfer/sec:      1.19MB
 
 <font size=6 color="green">
 ------ words below this line is not for user ------
