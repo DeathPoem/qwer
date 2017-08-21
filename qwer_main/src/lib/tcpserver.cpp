@@ -1,6 +1,73 @@
 #include "tcpserver.h"
+#include <sys/socket.h>
+#include <exception>
 
 namespace my_http {
+
+int detail::create_socketfd() {
+    int socketfd = ::socket(AF_INET, SOCK_STREAM, 0);
+    return socketfd;
+}
+
+void handle_all_signal(int signum) {
+    cout << "Signal ignored" << signum << endl;
+    return;
+}
+
+int detail::set_socket_delay(int fd) {
+    /*
+    // can't find TCP_NODELAY?
+    int yes = true;
+    int z = ::setsockopt(fd, SOL_SOCKET, SO_L, &yes, sizeof(yes));
+    if (z < 0) {
+        perror("setsocket linger");
+    }
+    return z;
+    */
+    return 0;
+}
+
+int detail::set_socket_nodelay(int fd) {
+    /*
+    // can't find TCP_NODELAY?
+    int yes = true;
+    int z = ::setsockopt(fd, SOL_SOCKET, TCP_NODELAY, &yes, sizeof(yes));
+    if (z < 0) {
+        perror("setsocket linger");
+    }
+    return z;
+    */
+    return 0;
+}
+
+int detail::set_socket_no_linger(int fd) {
+    struct linger x_li;
+    x_li.l_onoff = true;
+    x_li.l_linger = 0;
+    int z = ::setsockopt(fd, SOL_SOCKET, SO_LINGER, &x_li, sizeof(x_li));
+    if (z < 0) {
+        perror("setsocket linger");
+    }
+    return z;
+}
+
+int detail::set_socket_addr_reuse(int fd) {
+    int optval = 1;
+    int z = ::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0;
+    if (z < 0) {
+        perror("setsocket addr reuse");
+    }
+    return z;
+}
+
+int detail::set_socket_keep_alive(int fd) {
+    int keepalive = 1; 
+    int z = ::setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalive , sizeof(keepalive ));  
+    if (z < 0) {
+        perror("setsocket keep alive");
+    }
+    return z;
+}
 
 std::ostream& operator<<(std::ostream& os, TCPSTATE state) {
     string str;
@@ -14,10 +81,10 @@ std::ostream& operator<<(std::ostream& os, TCPSTATE state) {
         str = "Tryconnect";
     } else if (state == TCPSTATE::Gooddead) {
         str = "Gooddead";
-    } else if (state == TCPSTATE::Peerclosed) {
-        str = "Peerclosed";
-    } else if (state == TCPSTATE::Localclosed) {
-        str = "Localclosed";
+    } else if (state == TCPSTATE::PeerShut) {
+        str = "PeerShut";
+    } else if (state == TCPSTATE::ShutdownWR) {
+        str = "ShutdownWR";
     } else if (state == TCPSTATE::Failed) {
         str = "Failed";
     } else if (state == TCPSTATE::Newborn) {
@@ -62,6 +129,9 @@ Acceptor& Acceptor::set_accept_readable_callback(
 }
 
 void Acceptor::listen_it_and_accept() {
+    if (detail::set_socket_addr_reuse(listened_socket_->get_fd()) < 0) {
+        LOG_ERROR("can't addr reuse");
+    }
     listened_ip_.ip_bind_socketfd(listened_socket_->get_fd());
     auto check = ::listen(listened_socket_->get_fd(), SOMAXCONN);
     if (check != 0) {
@@ -105,6 +175,9 @@ void Acceptor::handle_epoll_readable() {
             NOTDONE();
         }
         set_nonblock(new_fd);
+        if (detail::set_socket_keep_alive(new_fd) < 0) {
+            LOG_ERROR("can't keepalive");
+        }
         shared_ptr<TCPConnection> shared_p_tc(
             new TCPConnection(emp_, new_fd, listened_ip_, peer));
         movecb_(std::move(shared_p_tc));
@@ -114,11 +187,6 @@ void Acceptor::handle_epoll_readable() {
 void Acceptor::epoll_and_accept(time_ms_t after) {
     LOG_INFO("in epoll_and_accept");
     emp_->run_after(after, std::bind(&Acceptor::listen_it_and_accept, this));
-}
-
-int detail::create_socketfd() {
-    int socketfd = ::socket(AF_INET, SOCK_STREAM, 0);
-    return socketfd;
 }
 
 Connector::Connector(EventManagerWrapper* emwp)
@@ -264,15 +332,10 @@ TCPConnection::TCPConnection(EventManager* emp, unique_ptr<Channel> socket_ch,
 }
 
 TCPConnection::~TCPConnection() {
-    // TODO
-    if (tcpstate_ == TCPSTATE::Localclosed) {
+    if (tcpstate_ == TCPSTATE::PeerShut || tcpstate_ == TCPSTATE::ShutdownWR) {
         LOG_INFO("one TCPConnection normal destruct");
-    } else if (tcpstate_ == TCPSTATE::Peerclosed) {
-        local_close();
-        LOG_INFO("one TCPConnection normal destruct, after local_close");
-    } else if (tcpstate_ == TCPSTATE::Afterhandshake){
-        local_close();
-        LOG_INFO("one TCPConnection don't finish when destruct");
+    } else if (tcpstate_ == TCPSTATE::Afterhandshake) {
+        LOG_INFO(" close force");
     } else {
         LOG_ERROR("can't be");
     }
@@ -296,7 +359,7 @@ TCPConnection& TCPConnection::set_normal_writable_callback(TCPCallBack&& cb) {
 
     void TCPConnection::do_lazy_close() {
         if (lazy_close_flag_) {
-            local_close();
+            to_local_close();
         }
     }
 
@@ -342,7 +405,7 @@ void TCPConnection::handle_epoll_readable() {
 }
 
 void TCPConnection::handle_epoll_peer_shut_down() {
-    peer_close();
+    handle_peer_close();
 }
 
 void TCPConnection::handle_epoll_writable() { nwrite_cb_(*this); }
@@ -445,39 +508,72 @@ TCPConnection& TCPConnection::set_seqno_of_server(uint32_t seqno) {
 
 uint32_t TCPConnection::get_seqno() { return seqno_; }
 
-// TODO 做一个类似nginx的延迟关闭 lingering_close 
-void TCPConnection::local_close() {
-    if (tcpstate_ == TCPSTATE::Localclosed) {
-        return;
-    } else if (tcpstate_ == TCPSTATE::Peerclosed){
-        // disregister
-        emp_->remove_channel(unique_p_ch_.get());
-        unique_p_ch_->shutdown();
-        tcpstate_ = TCPSTATE::Localclosed;
-        LOG_INFO("local TCPConnection close");
-        if (local_close_cb_ != nullptr) {       // this may lead destructor
-            local_close_cb_(*this);
-        }
-    } else if (tcpstate_ == TCPSTATE::Afterhandshake) {
-        peer_close();
-        local_close();
-    } else {
-        NOTDONE();
+//void TCPConnection::to_local_close() {
+//    if (tcpstate_ == TCPSTATE::Localclosed) {
+//        return;
+//    } else if (tcpstate_ == TCPSTATE::Peerclosed){
+//        // disregister
+//        emp_->remove_channel(unique_p_ch_.get());
+//        unique_p_ch_->shutdown();
+//        tcpstate_ = TCPSTATE::Localclosed;
+//        LOG_INFO("local TCPConnection close");
+//        if (local_close_cb_ != nullptr) {       // this may lead destructor
+//            local_close_cb_(*this);
+//        }
+//    } else if (tcpstate_ == TCPSTATE::Afterhandshake) {
+//        peer_close();
+//        to_local_close();
+//    } else {
+//        NOTDONE();
+//    }
+//}
+//
+//void TCPConnection::peer_close() {
+//    if (tcpstate_ != TCPSTATE::Afterhandshake) {
+//        NOTDONE();
+//    } else {
+//        if (peer_close_cb_ != nullptr) {    // this must not lead destructor
+//            peer_close_cb_(*this);
+//        }
+//        // deregister
+//        emp_->remove_registered_event(Channel::get_peer_shutdown_flag(), unique_p_ch_.get());
+//        tcpstate_ = TCPSTATE::Peerclosed;
+//    }
+//    LOG_INFO("peer close ");
+//}
+//
+
+//! @brief assume that peer would read(we think this peerdown is caused by peer invoke shutdown instead of close, because both would send FIN), then next write would try to write some and receive RST if peer close it, then we check if EPOLLERR is get or read zero to know RST is received and close. TODO
+void TCPConnection::handle_peer_close() {
+    tcpstate_ = TCPSTATE::PeerShut;
+    if (peer_close_cb_ != nullptr) { peer_close_cb_(*this); }
+    handle_full_close();
+    /*
+    {
+        emp_->register_event(Channel::get_err_flag(), unique_p_ch_.get(), [this](){handle_full_close();});
+        emp_->run_after(50, [this](){handle_full_close();});
     }
+    */
 }
 
-void TCPConnection::peer_close() {
-    if (tcpstate_ != TCPSTATE::Afterhandshake) {
-        NOTDONE();
-    } else {
-        if (peer_close_cb_ != nullptr) {    // this must not lead destructor
-            peer_close_cb_(*this);
-        }
-        // deregister
-        emp_->remove_registered_event(Channel::get_peer_shutdown_flag(), unique_p_ch_.get());
-        tcpstate_ = TCPSTATE::Peerclosed;
+void TCPConnection::handle_full_close() {
+    unique_p_ch_->close();
+    emp_->remove_channel(unique_p_ch_.get());
+    // this would lead destructor
+    if (local_close_cb_ != nullptr) {local_close_cb_(*this); }
+}
+
+// 要做一个类似nginx的延迟关闭 lingering_close TODO
+// actually, we don't need to do this [ref](http://blog.csdn.net/factor2000/article/details/3929816)
+// because set SO_LINGER option would cause current routine blocks (maybe won't because nonblock fd? but at least [man](https://linux.die.net/man/3/setsockopt) says it blocks)
+// shutdown and close is good enough for me.
+void TCPConnection::to_local_close() {
+    if (tcpstate_ == TCPSTATE::Afterhandshake) {
+        unique_p_ch_->shutdown();
+        tcpstate_ = TCPSTATE::ShutdownWR;
+        handle_full_close();
+        //emp_->run_after(20, [this](){handle_full_close();});
     }
-    LOG_INFO("peer close ");
 }
 
 TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
@@ -528,15 +624,14 @@ TCPServer::TCPServer(EventManagerWrapper* emwp, Ipv4Addr listen_ip,
                         }
                         this_con.do_lazy_close();
                     } else {
-                        if (this_con.get_state() == TCPSTATE::Peerclosed) {
-                            LOG_WARN("no bytes to read in read cb, if it's level triggered, it means peer close, we gonna to local_close this");       // if you use level triggered, it's the problem
-                            this_con.local_close();
-                        } else if (this_con.get_state() == TCPSTATE::Localclosed) {
-                            NOTDONE();
+                        if (this_con.get_state() == TCPSTATE::PeerShut) {
+                            LOG_WARN("no bytes to read in read cb");
+                        } else if (this_con.get_state() == TCPSTATE::ShutdownWR) {
+                            LOG_WARN("after ShutdownWR, still wake up");
                         } else {
                             LOG_ERROR("???");
-                            this_con.local_close();
                         }
+                        this_con.to_local_close();
                     }
                 })
                 .set_local_close_callback([this](TCPConnection& this_con) {
@@ -569,7 +664,7 @@ void TCPServer::remove_tcpcon_by_seqno(uint32_t seqno) {
     auto found = tcpcon_map_.find(seqno);
     assert(tcpcon_map_[seqno].use_count() == 1);
     auto check = get<1>(*found)->get_state();
-    if (TCPSTATE::Peerclosed == check || TCPSTATE::Localclosed == check ) {
+    if (TCPSTATE::ShutdownWR == check || TCPSTATE::PeerShut == check ) {
         LOG_DEBUG("normal remove one tcpcon");
         tcpcon_map_.erase(found);
     } else {
@@ -678,10 +773,10 @@ TCPClient::TCPClient(EventManagerWrapper* emwp, Ipv4Addr connect_ip,
 TCPClient::~TCPClient() {
     LOG_INFO("TCPClient destruct");
     switch (get_state()) {
-        case TCPSTATE::Peerclosed : {
+        case TCPSTATE::ShutdownWR : {
             break;
         }
-        case TCPSTATE::Localclosed : {
+        case TCPSTATE::PeerShut : {
             break;
         }
         default: {

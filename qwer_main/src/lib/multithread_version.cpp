@@ -183,15 +183,14 @@ void MultiServer::MsgServerRoutineDetail() {
                                         //after_to_write_cb_(this_con);
                                     //}
                                 } else {
-                                    if (this_con.get_state() == TCPSTATE::Peerclosed) {
-                                        LOG_WARN("no bytes to read in read cb, if it's level triggered, it means peer close, we gonna to local_close this");       // if you use level triggered, it's the problem
-                                        this_con.local_close();
-                                    } else if (this_con.get_state() == TCPSTATE::Localclosed){
-                                        NOTDONE();
+                                    if (this_con.get_state() == TCPSTATE::PeerShut) {
+                                        LOG_WARN("no bytes to read in read cb, ");
+                                    } else if (this_con.get_state() == TCPSTATE::ShutdownWR){
+                                        LOG_ERROR("still?");
                                     } else {
                                         LOG_ERROR("???");
-                                        //this_con.local_close();
                                     }
+                                    this_con.to_local_close();
                                 }
                             })
                             .set_local_close_callback([this, &tcpcon_map](TCPConnection& this_con) {

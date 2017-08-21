@@ -39,14 +39,14 @@ void x_client_thread_function() {
                 })
             .set_tcp_callback([&tcpclient, &write_to_server, &read_from_server](TCPConnection& this_con) {
                         LOG_DEBUG("read from server, ");
-                        if (this_con.get_state() == TCPSTATE::Localclosed) {
+                        if (this_con.get_state() == TCPSTATE::ShutdownWR) {
                             NOTDONE();
                         }
                         string re = this_con.read_by_string();
                         read_from_server = re == "" ? read_from_server : re;
                         this_con.get_rb_ref().consume(read_from_server.size());
                         SLOG_DEBUG("client read from server as" << read_from_server);
-                        this_con.local_close();
+                        this_con.to_local_close();
                     });
     for (int i = 0; i < 20; ++i) {
         emw.loop_once(500);

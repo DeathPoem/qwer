@@ -19,12 +19,28 @@ namespace my_http {
 
 #ifndef X_MAXTCPCON
 #define X_MAXTCPCON 8000
+#define X_KEEPALIVE true
+#define X_ADDRREUSE true
 #endif /* ifndef X_MAXTCPCON */
 
 namespace detail {
 int create_socketfd();
-//TODO
-// tcp keep alive and tcp nodelay
+
+int set_socket_keep_alive(int fd);
+
+//对于HTTP server来说，一般在发送响应头时使用TCP_NODELAY并闭Nagle算法，但在发送文件内容时，比如使用sendfile，可以使用TCP_CORK来开启Nagle算法，从而减少TCP分节
+int set_socket_nodelay(int fd);
+
+int set_socket_delay(int fd);
+
+//! @brief use this before bind and listen
+int set_socket_addr_reuse(int fd);
+
+//! @brief would cause socket send RST if l.linger = 0, using this would avoid TIME_WAIT
+int set_socket_no_linger(int fd);
+
+void handle_all_signal(int signum);
+
 } /* detail */
 
 class TCPConnection;
@@ -36,11 +52,11 @@ enum class TCPSTATE {
                          // just return you a new socket
     Tryconnect = 3,
     Gooddead = 4,
-    Peerclosed = 5,
-    Localclosed = 6,
+    ShutdownWR = 5,
+    PeerShut = 6,
     Failed = 7,
     Newborn = 8,
-    Connected = 9
+    Connected = 9,
 };
 
 std::ostream& operator<<(std::ostream& os, TCPSTATE state);
@@ -133,16 +149,17 @@ public:
     BigFileSendCallBack get_bigfilesendcb();
     void to_lazy_close(); //!< set_to_close_after_this_write_flag
     void do_lazy_close();  //!< if to lazy close then close
-    void local_close();
-    void peer_close();
+    void to_local_close();
     TCPSTATE get_state();
 
 private:
+    void handle_peer_close();
+    void handle_full_close();
     EventManager* const emp_;
     TCPCallBack nread_cb_;
     TCPCallBack nwrite_cb_;
-    TCPCallBack peer_close_cb_;
-    TCPCallBack local_close_cb_;
+    TCPCallBack peer_close_cb_;     //!< this cb must not destruct TCPConnection
+    TCPCallBack local_close_cb_;    //!< this cb should destruct TCPConnection
     TCPSTATE tcpstate_;
     uint32_t seqno_;
     Buffer read_sock_to_this_, write_sock_from_this_;

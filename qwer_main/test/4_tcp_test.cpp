@@ -210,7 +210,7 @@ void client_thread_function() {
                                 this_con.get_rb_ref().consume(outer.size());
                                 // TODO delete
                                 LOG_ERROR("jj:%d", clientholder.shared_p_tc_vec_[0].use_count());
-                                this_con.local_close();
+                                this_con.to_local_close();
                             }
                         })
                         .set_local_close_callback(
@@ -323,13 +323,13 @@ void x_client_thread_function() {
                 this_con.write_by_string("fucking awesome!");
                 }).set_tcp_callback([&tcpclient, &write_to_server, &read_from_server](TCPConnection& this_con) {
                         LOG_DEBUG("read from server, ");
-                        if (this_con.get_state() == TCPSTATE::Localclosed) {
+                        if (this_con.get_state() == TCPSTATE::ShutdownWR) {
                             NOTDONE();
                         }
                         string re = this_con.read_by_string();
                         read_from_server = re == "" ? read_from_server : re;
                         this_con.get_rb_ref().consume(read_from_server.size());
-                        this_con.local_close();
+                        this_con.to_local_close();
                     });
     for (int i = 0; i < 10; ++i) {
         emw.loop_once(500);
