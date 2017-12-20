@@ -3,6 +3,7 @@
 
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>
@@ -31,6 +32,7 @@ int set_socket_keep_alive(int fd);
 //对于HTTP server来说，一般在发送响应头时使用TCP_NODELAY并闭Nagle算法，但在发送文件内容时，比如使用sendfile，可以使用TCP_CORK来开启Nagle算法，从而减少TCP分节
 int set_socket_nodelay(int fd);
 
+// set level to IPPROTO_TCP as defined in the <netinet/in.h> header.
 int set_socket_delay(int fd);
 
 //! @brief use this before bind and listen

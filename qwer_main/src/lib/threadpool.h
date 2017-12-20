@@ -11,7 +11,7 @@
 
 namespace my_http {
 
-    //! @note actually, we can use SyncQueue
+   //! @note actually, we can use SyncQueue
     // TODO delete this
 template<typename T>
     class ThreadSafeQueue

@@ -140,6 +140,7 @@ int main() { return deamon_1(); }
 - [x] can I create a object in one thread and use it in another thread? Yes, of course. [ref](https://stackoverflow.com/questions/9697865/what-happens-if-i-call-an-objects-member-function-from-a-different-thread)
 - [x] try something about reflection
 - [] wrap http_parser into a class to use
+- [] loging page [ref](https://www.w3schools.com/howto/howto_css_login_form.asp) [ref](https://www.daniweb.com/programming/web-development/code/330933/a-simple-html-login-page-using-javascript)
 
 # Other
 
